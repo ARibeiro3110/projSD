@@ -3,14 +3,25 @@ package pt.ulisboa.tecnico.tuplespaces.client;
 import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
 public class ClientMain {
+
+    /** Set flag to true to print debug messages. 
+     * The flag can be set using the -debug command line option. */
+    private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
+
+    /** Helper method to print debug messages. */
+    private static void debug(String debugMessage) {
+        if (DEBUG_FLAG)
+            System.err.println(debugMessage);
+    }
+    
     public static void main(String[] args) {
 
         System.out.println(ClientMain.class.getSimpleName());
 
         // receive and print arguments
-        System.out.printf("Received %d arguments%n", args.length);
+        debug(String.format("Received %d arguments", args.length));
         for (int i = 0; i < args.length; i++) {
-            System.out.printf("arg[%d] = %s%n", i, args[i]);
+            debug(String.format("arg[%d] = %s", i, args[i]));
         }
 
         // check arguments
@@ -24,8 +35,8 @@ public class ClientMain {
         final String host = args[0];
         final String port = args[1];
 
-        CommandProcessor parser = new CommandProcessor(new ClientService());
+        // create a new parser and start it
+        CommandProcessor parser = new CommandProcessor(new ClientService(host, port));
         parser.parseInput();
-
     }
 }

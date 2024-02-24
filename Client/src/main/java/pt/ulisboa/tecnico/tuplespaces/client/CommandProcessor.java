@@ -1,5 +1,6 @@
 package pt.ulisboa.tecnico.tuplespaces.client;
 
+import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
 import java.util.Scanner;
@@ -66,6 +67,9 @@ public class CommandProcessor {
                     break;
              }
         }
+
+        this.clientService.shutdown();
+        scanner.close();
     }
 
     private void put(String[] split){
