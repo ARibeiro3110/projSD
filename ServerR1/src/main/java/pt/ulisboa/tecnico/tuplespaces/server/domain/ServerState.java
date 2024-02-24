@@ -3,7 +3,9 @@ package pt.ulisboa.tecnico.tuplespaces.server.domain;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ServerState {
+import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
+
+public class ServerState extends TupleSpacesGrpc.TupleSpacesImplBase{
 
   private List<String> tuples;
 
