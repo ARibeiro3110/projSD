@@ -4,7 +4,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized.PutRequest;
+import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized.*;
 
 public class ClientService {
   
@@ -42,7 +42,27 @@ public class ClientService {
     public void put(String tuple) {
         try {
             stub.put(PutRequest.newBuilder().setNewTuple(tuple).build());
-            System.out.println("OK");
+            System.out.println("OK");   // TODO: place outside ClientService?
+        } catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " + 
+            e.getStatus().getDescription());
+        }
+    }
+
+    public void read(String searchPattern) {
+        try {
+            ReadResponse result = stub.read(ReadRequest.newBuilder().setSearchPattern(searchPattern).build());
+            System.out.println("OK\n" + result.getResult());
+        } catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " + 
+            e.getStatus().getDescription());
+        }
+    }
+
+    public void take(String searchPattern) {
+        try {
+            TakeResponse result = stub.take(TakeRequest.newBuilder().setSearchPattern(searchPattern).build());
+            System.out.println("OK\n" + result.getResult());
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " + 
             e.getStatus().getDescription());

@@ -4,11 +4,11 @@ import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
 public class ClientMain {
 
-    /** Set flag to true to print debug messages. 
-     * The flag can be set using the -debug command line option. */
+    /** set flag to true to print debug messages. 
+     * the flag can be set using the -debug command line option. */
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
-    /** Helper method to print debug messages. */
+    /** helper method to print debug messages. */
     private static void debug(String debugMessage) {
         if (DEBUG_FLAG)
             System.err.println(debugMessage);
