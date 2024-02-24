@@ -2,7 +2,9 @@ package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.StatusRuntimeException;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
+import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized.PutRequest;
 
 public class ClientService {
   
@@ -36,6 +38,18 @@ public class ClientService {
         // Shutdown channel before stopping the process
         channel.shutdownNow();
     }
-    
+  
+    public void put(String tuple) {
+        try {
+            stub.put(PutRequest.newBuilder().setNewTuple(tuple).build());
+            System.out.println("OK");
+        } catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " + 
+            e.getStatus().getDescription());
+        }
+    }
+
     // TODO: implement the remote operations
+
+
 }

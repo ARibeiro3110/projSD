@@ -20,6 +20,7 @@ public class ServerMain {
         }
 
         // check arguments
+        // TODO: qualifier is not mandatory
         if (args.length != 2) {
             System.err.println("Argument(s) missing!");
             System.err.printf("Usage: mvn exec:java -Dexec.args=<port> <qualifier>", ServerMain.class.getName());
