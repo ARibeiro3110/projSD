@@ -69,7 +69,19 @@ public class ClientService {
         }
     }
 
-    // TODO: implement the remote operations
+    public void getTupleSpacesState() {
+        try {
+            getTupleSpacesStateResponse tuples = stub.getTupleSpacesState(getTupleSpacesStateRequest.newBuilder().build());
+            System.out.println("OK");
+            
+            for (String tuple : tuples.getTupleList()){
+                System.out.println(tuple);
+            }
+        } catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " + 
+            e.getStatus().getDescription());
+        }
+    }
 
 
 }

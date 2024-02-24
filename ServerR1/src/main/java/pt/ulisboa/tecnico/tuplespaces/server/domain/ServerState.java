@@ -7,7 +7,7 @@ import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized.*;
 
-import static io.grpc.Status.INVALID_ARGUMENT;
+import static io.grpc.Status.*;
 
 
 public class ServerState extends TupleSpacesGrpc.TupleSpacesImplBase {
@@ -49,9 +49,6 @@ public class ServerState extends TupleSpacesGrpc.TupleSpacesImplBase {
         return null;
     }
 
-    public String read(String pattern) {
-        return getMatchingTuple(pattern);
-    }
 
     @Override
     public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
@@ -60,12 +57,20 @@ public class ServerState extends TupleSpacesGrpc.TupleSpacesImplBase {
         // validate tuple
         if (!isValidSearchPattern(searchPattern)) {
             responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription("Invalid seaarch pattern format.")
+                    .withDescription("Invalid search pattern format.")
                     .asRuntimeException());
             return;
         }
 
         String result = getMatchingTuple(searchPattern);
+
+        // if the tuple was not found
+        if (result == null){
+            responseObserver.onError(NOT_FOUND
+                    .withDescription("Tuple not found.")
+                    .asRuntimeException());
+            return;
+        }
 
         // send a single response through the stream.
         responseObserver.onNext(ReadResponse.newBuilder().setResult(result).build());
@@ -91,19 +96,32 @@ public class ServerState extends TupleSpacesGrpc.TupleSpacesImplBase {
         // read tuple value
         String result = getMatchingTuple(searchPattern);
 
+        // if the tuple was not found
+        if (result == null){
+            responseObserver.onError(NOT_FOUND
+                    .withDescription("Tuple not found.")
+                    .asRuntimeException());
+            return;
+        }
+
         // delete tuple value from tuples list
         this.tuples.remove(result);
 
-        // send a single response through the stream.
+        // send a single response through the stream
         responseObserver.onNext(TakeResponse.newBuilder().setResult(result).build());
 
         // notify the client that the operation has been completed.
         responseObserver.onCompleted();
     }
 
-    public List<String> getTupleSpacesState() {
-        // TODO
-        return null;
+
+    @Override
+    public void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {
+        // send a single response through the stream
+        responseObserver.onNext(getTupleSpacesStateResponse.newBuilder().addAllTuple(tuples).build());
+
+        // notify the client that the operation has been completed
+        responseObserver.onCompleted();
     }
 
 

@@ -1,6 +1,5 @@
 package pt.ulisboa.tecnico.tuplespaces.client;
 
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
 import java.util.Scanner;
@@ -125,7 +124,7 @@ public class CommandProcessor {
         String qualifier = split[1];
 
         // get the tuple spaces state
-        System.out.println("TODO: implement getTupleSpacesState command");
+        clientService.getTupleSpacesState();
 
     }
 
