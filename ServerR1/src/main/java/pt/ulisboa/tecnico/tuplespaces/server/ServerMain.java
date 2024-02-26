@@ -10,6 +10,9 @@ import java.io.IOException;
 
 public class ServerMain {
 
+    private static final String NAME_SERVER_HOST = "localhost";
+    private static final String NAME_SERVER_PORT = "5001";
+
     public static void main(String[] args) throws IOException, InterruptedException{
         System.out.println(ServerMain.class.getSimpleName());
 
@@ -30,16 +33,16 @@ public class ServerMain {
         final int port = Integer.parseInt(args[0]);
         final BindableService service = new ServerState();
 
-        // Create a new server to listen on port
+        // create a new server to listen on port
         Server server = ServerBuilder.forPort(port).addService(service).build();
 
-        // Start the server
+        // start the server
         server.start();
 
-        // Server threads are running in the background.
+        // server threads are running in the background.
         System.out.println("Server started");
 
-        // Do not exit the main thread. Wait until server is terminated.
+        // do not exit the main thread. Wait until server is terminated.
         server.awaitTermination();
     }
 }

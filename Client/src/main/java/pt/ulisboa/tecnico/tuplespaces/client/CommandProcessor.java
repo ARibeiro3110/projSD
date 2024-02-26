@@ -121,7 +121,7 @@ public class CommandProcessor {
             this.printUsage();
             return;
         }
-        String qualifier = split[1];
+        String qualifier = split[1]; // TODO
 
         // get the tuple spaces state
         clientService.getTupleSpacesState();
