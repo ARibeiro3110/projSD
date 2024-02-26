@@ -1,10 +1,10 @@
-package pt.ulisboa.tecnico.tuplespaces.client.grpc;
+package pt.ulisboa.tecnico.tuplespaces.server.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized.*;
+import pt.ulisboa.tecnico.nameserver.contract.NameServerGrpc;
+import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.*;
 
 public class ClientService {
   
@@ -12,7 +12,7 @@ public class ClientService {
      * The flag can be set using the -debug command line option. */
     
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
-    private TupleSpacesGrpc.TupleSpacesBlockingStub stub;
+    private NameServerGrpc.NameServerBlockingStub stub;
     private ManagedChannel channel;
     
     /** Helper method to print debug messages. */
@@ -29,9 +29,9 @@ public class ClientService {
         this.stub = createBlockingStub();
     }
 
-    private TupleSpacesGrpc.TupleSpacesBlockingStub createBlockingStub() {
+    private NameServerGrpc.NameServerBlockingStub createBlockingStub() {
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        return TupleSpacesGrpc.newBlockingStub(channel);
+        return NameServerGrpc.newBlockingStub(channel);
     } 
 
     public void shutdown() {
@@ -39,9 +39,9 @@ public class ClientService {
         channel.shutdownNow();
     }
   
-    public void put(String tuple) {
+    public void register(String name, String qualifier, String target) {
         try {
-            stub.put(PutRequest.newBuilder().setNewTuple(tuple).build());
+            stub.register(RegisterRequest.newBuilder().setName(name).setQualifier(qualifier).setTarget(target).build());
             System.out.println("OK");   // TODO: place outside ClientService?
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " + 
@@ -49,34 +49,20 @@ public class ClientService {
         }
     }
 
-    public void read(String searchPattern) {
+    public void lookup(String name, String qualifier) { //TODO: qualifier is optional, second function?
         try {
-            ReadResponse result = stub.read(ReadRequest.newBuilder().setSearchPattern(searchPattern).build());
-            System.out.println("OK\n" + result.getResult());
+            LookupResponse targets = stub.lookup(LookupRequest.newBuilder().setName(name).setQualifier(qualifier).build());
+            System.out.println("OK\n" + targets.getTargetList());
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " + 
-            e.getStatus().getDescription());
+            e.getStatus().getDescription()); // TODO: should we keep these prints? maybe as debugs?
         }
     }
 
-    public void take(String searchPattern) {
+    public void delete(String name, String target) {
         try {
-            TakeResponse result = stub.take(TakeRequest.newBuilder().setSearchPattern(searchPattern).build());
-            System.out.println("OK\n" + result.getResult());
-        } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + 
-            e.getStatus().getDescription());
-        }
-    }
-
-    public void getTupleSpacesState() {
-        try {
-            getTupleSpacesStateResponse tuples = stub.getTupleSpacesState(getTupleSpacesStateRequest.newBuilder().build());
+            stub.delete(DeleteRequest.newBuilder().setName(name).setTarget(target).build());
             System.out.println("OK");
-            
-            for (String tuple : tuples.getTupleList()){
-                System.out.println(tuple);
-            }
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " + 
             e.getStatus().getDescription());
