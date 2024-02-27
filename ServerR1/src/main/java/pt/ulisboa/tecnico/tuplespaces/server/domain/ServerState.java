@@ -24,12 +24,20 @@ public class ServerState extends TupleSpacesGrpc.TupleSpacesImplBase {
         this.target = target;
         this.qualifier = qualifier;
         this.tuples = new ArrayList<String>();
-        registerServer();
     }
 
 
-    private void registerServer() {
+    public void registerServer() {
         clientService.register(name, qualifier, target); 
+    }
+
+    public void unregisterServer() {
+        clientService.delete(name, target);
+        clientService.shutdown();
+    }
+
+    public void shutdown() {
+        clientService.shutdown();
     }
 
 

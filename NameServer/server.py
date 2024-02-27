@@ -46,7 +46,7 @@ class NamingServer:
 
     # delete server from all services
     def deleteServer(self, target):
-        for serviceEntry in self.serviceEntries:
+        for serviceEntry in self.serviceEntries.values():
             serviceEntry.deleteServerEntry(target)
 
 
