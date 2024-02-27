@@ -7,10 +7,10 @@ import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized.*;
 
 public class ClientService {
-  
+
     /** Set flag to true to print debug messages. 
      * The flag can be set using the -debug command line option. */
-    
+
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
     private TupleSpacesGrpc.TupleSpacesBlockingStub stub;
     private ManagedChannel channel;
@@ -23,7 +23,7 @@ public class ClientService {
     private final String target;
     
 
-    public ClientService(String host, String port) {
+    public ClientService(String host, int port) {
         this.target = host + ":" + port;
         debug("Target: " + target);
         this.stub = createBlockingStub();
@@ -32,7 +32,7 @@ public class ClientService {
     private TupleSpacesGrpc.TupleSpacesBlockingStub createBlockingStub() {
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         return TupleSpacesGrpc.newBlockingStub(channel);
-    } 
+    }
 
     public void shutdown() {
         // Shutdown channel before stopping the process

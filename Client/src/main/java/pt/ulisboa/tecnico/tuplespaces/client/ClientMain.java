@@ -33,7 +33,7 @@ public class ClientMain {
 
         // get the host and the port
         final String host = args[0];
-        final String port = args[1];
+        final int port = Integer.parseInt(args[1]);
 
         // create a new parser and start it
         CommandProcessor parser = new CommandProcessor(new ClientService(host, port));

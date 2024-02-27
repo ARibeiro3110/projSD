@@ -6,17 +6,32 @@ import java.util.List;
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized.*;
+import pt.ulisboa.tecnico.tuplespaces.server.grpc.ClientService;
 
 import static io.grpc.Status.*;
 
 
 public class ServerState extends TupleSpacesGrpc.TupleSpacesImplBase {
 
+    private ClientService clientService;
     private List<String> tuples;
+    private static final String name = "TupleSpaces";
+    private String target;
+    private String qualifier;
 
-    public ServerState() {
+    public ServerState(ClientService clientService, String target, String qualifier) {
+        this.clientService = clientService;
+        this.target = target;
+        this.qualifier = qualifier;
         this.tuples = new ArrayList<String>();
+        registerServer();
     }
+
+
+    private void registerServer() {
+        clientService.register(name, qualifier, target); 
+    }
+
 
     @Override
     public void put(PutRequest request, StreamObserver<PutResponse> responseObserver) {

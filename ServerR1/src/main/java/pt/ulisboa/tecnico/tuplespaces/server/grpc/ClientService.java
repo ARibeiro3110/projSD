@@ -8,10 +8,11 @@ import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.*;
 
 public class ClientService {
   
-    /** Set flag to true to print debug messages. 
+    /** Set flag to true to print debug messages.
      * The flag can be set using the -debug command line option. */
     
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
+
     private NameServerGrpc.NameServerBlockingStub stub;
     private ManagedChannel channel;
     
@@ -21,9 +22,9 @@ public class ClientService {
             System.err.println(debugMessage);
     }
     private final String target;
-    
 
-    public ClientService(String host, String port) {
+
+    public ClientService(String host, int port) {
         this.target = host + ":" + port;
         debug("Target: " + target);
         this.stub = createBlockingStub();

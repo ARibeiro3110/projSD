@@ -5,7 +5,6 @@ from concurrent import futures
 import NameServer_pb2 as pb2
 import NameServer_pb2_grpc as pb2_grpc
 
-
 # define the port
 PORT = 5001
 
