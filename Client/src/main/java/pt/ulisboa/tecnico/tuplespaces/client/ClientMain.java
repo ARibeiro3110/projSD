@@ -4,6 +4,10 @@ import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
 public class ClientMain {
 
+    private static final String NAME_SERVER_HOST = "localhost";
+    private static final int NAME_SERVER_PORT = 5001;
+
+
     /** set flag to true to print debug messages. 
      * the flag can be set using the -debug command line option. */
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
@@ -25,18 +29,14 @@ public class ClientMain {
         }
 
         // check arguments
-        if (args.length < 2) {
-            System.err.println("Argument(s) missing!");
-            System.err.println("Usage: mvn exec:java -Dexec.args=<host> <port>");
+        if (args.length != 0) {
+            System.err.println("Usage: mvn exec:java");
             return;
-        }
-
-        // get the host and the port
-        final String host = args[0];
-        final int port = Integer.parseInt(args[1]);
+        } //FIXME maybe just delete this
+        
 
         // create a new parser and start it
-        CommandProcessor parser = new CommandProcessor(new ClientService(host, port));
+        CommandProcessor parser = new CommandProcessor(new ClientService(NAME_SERVER_HOST, NAME_SERVER_PORT));
         parser.parseInput();
     }
 }

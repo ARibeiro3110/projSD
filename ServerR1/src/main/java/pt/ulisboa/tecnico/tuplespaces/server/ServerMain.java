@@ -14,7 +14,6 @@ public class ServerMain {
     private static final String NAME_SERVER_HOST = "localhost";
     private static final int NAME_SERVER_PORT = 5001;
 
-
     public static void main(String[] args) throws IOException, InterruptedException{
         System.out.println(ServerMain.class.getSimpleName());
 
