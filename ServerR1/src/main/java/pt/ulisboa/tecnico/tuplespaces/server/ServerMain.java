@@ -34,9 +34,12 @@ public class ServerMain {
         final int port = Integer.parseInt(args[0]);
         final String qualifier = args[1];
         final String target = "localhost:" + port;
-        final BindableService service = new ServerState(new ClientService(NAME_SERVER_HOST, NAME_SERVER_PORT), target, qualifier);
-        
+        final ServerState service = new ServerState(new ClientService(NAME_SERVER_HOST, NAME_SERVER_PORT), target, qualifier);
 
+        // register server
+        System.out.println("Registering server...");
+        service.registerServer();
+    
         // create a new server to listen on port
         Server server = ServerBuilder.forPort(port).addService(service).build();
 
@@ -45,6 +48,14 @@ public class ServerMain {
 
         // server threads are running in the background.
         System.out.println("Server started");
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("\nShutting down server...");
+            server.shutdown();
+            service.unregisterServer();
+            service.shutdown();
+            System.out.println("Server shut down.");
+        }));
 
         // do not exit the main thread. Wait until server is terminated.
         server.awaitTermination();
