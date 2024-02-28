@@ -13,8 +13,9 @@ public class ServerState {
 
     }
 
-    public void put(String tuple) {
+    public synchronized void put(String tuple) {
         tuples.add(tuple);
+        notifyAll();
     }
 
     private String getMatchingTuple(String pattern) {
@@ -26,13 +27,33 @@ public class ServerState {
         return null;
     }
 
-    public String read(String pattern) {
-        // FIX ME BLOCKING OPERATION
+    public synchronized String read(String pattern) {
+        // wait until a tuple matching the pattern is available
+
+        while (getMatchingTuple(pattern) == null) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                // TODO: handle exception
+                e.printStackTrace();
+            }
+        }
+
         return getMatchingTuple(pattern);
     }
 
-    public String take(String pattern) {
-        // FIX ME BLOCKING OPERATION
+    public synchronized String take(String pattern) {
+        // wait until a tuple matching the pattern is available
+
+        while (getMatchingTuple(pattern) == null) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                // TODO: handle exception
+                e.printStackTrace();
+            }
+        }
+
         String tuple = getMatchingTuple(pattern);
 
         if (tuple != null) {
@@ -42,7 +63,7 @@ public class ServerState {
         return tuple;
     }
 
-    public List<String> getTupleSpacesState() {
+    public synchronized List<String> getTupleSpacesState() {
         return this.tuples;
     }
 
