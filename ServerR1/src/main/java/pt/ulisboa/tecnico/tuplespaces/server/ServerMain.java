@@ -4,8 +4,9 @@ import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-import pt.ulisboa.tecnico.tuplespaces.server.domain.ServerState;
+import pt.ulisboa.tecnico.tuplespaces.server.domain.ServerUtils;
 import pt.ulisboa.tecnico.tuplespaces.server.grpc.ClientService;
+import pt.ulisboa.tecnico.tuplespaces.server.grpc.ServerStateImpl;
 
 import java.io.IOException;
 
@@ -26,7 +27,7 @@ public class ServerMain {
 
         // check arguments
         // TODO: qualifier is not mandatory
-        if (args.length != 2) {
+        if (args.length < 2) {
             System.err.println("Argument(s) missing!");
             System.err.printf("Usage: mvn exec:java -Dexec.args=<port> <qualifier>", ServerMain.class.getName());
             return;
@@ -35,11 +36,12 @@ public class ServerMain {
         final int port = Integer.parseInt(args[0]);
         final String qualifier = args[1];
         final String target = "localhost:" + port;
-        final ServerState service = new ServerState(new ClientService(NAME_SERVER_HOST, NAME_SERVER_PORT), target, qualifier);
+        final BindableService service = new ServerStateImpl();
+        final ServerUtils serverUtils = new ServerUtils(new ClientService(NAME_SERVER_HOST, NAME_SERVER_PORT), target, qualifier);
 
         // register server
         System.out.println("Registering server...");
-        service.registerServer();
+        serverUtils.registerServer();
     
         // create a new server to listen on port
         Server server = ServerBuilder.forPort(port).addService(service).build();
@@ -53,8 +55,8 @@ public class ServerMain {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("\nShutting down server...");
             server.shutdown();
-            service.unregisterServer();
-            service.shutdown();
+            serverUtils.unregisterServer();
+            serverUtils.shutdown();
             System.out.println("Server shut down.");
         }));
 

@@ -50,16 +50,6 @@ public class ClientService {
         }
     }
 
-    public void lookup(String name, String qualifier) { //TODO: qualifier is optional, second function?
-        try {
-            LookupResponse targets = stub.lookup(LookupRequest.newBuilder().setName(name).setQualifier(qualifier).build());
-            System.out.println("OK\n" + targets.getTargetList());
-        } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + 
-            e.getStatus().getDescription()); // TODO: should we keep these prints? maybe as debugs?
-        }
-    }
-
     public void delete(String name, String target) {
         try {
             stub.delete(DeleteRequest.newBuilder().setName(name).setTarget(target).build());
@@ -69,6 +59,5 @@ public class ClientService {
             e.getStatus().getDescription());
         }
     }
-
 
 }
