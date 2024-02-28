@@ -13,7 +13,7 @@ class ServerEntry:
     def __init__(self, target, qualifier):
         self.target = target
         self.qualifier = qualifier
-    
+
     def getTarget(self):
         return self.target
 
@@ -22,7 +22,7 @@ class ServiceEntry:
     def __init__(self, name):
         self.name = name
         self.serverEntries = []
-    
+
     def addServerEntry(self, ServerEntry):
         self.serverEntries.append(ServerEntry)
 
@@ -66,28 +66,30 @@ class NameServerServiceImpl(pb2_grpc.NameServerServicer):
         # add service entry if it doesn't exist
         if request.name not in self.namingServer.serviceEntries:
             self.namingServer.addService(ServiceEntry(request.name))
-        
+
         # add server entry
         self.namingServer.serviceEntries[request.name].addServerEntry( \
             ServerEntry(request.target, request.qualifier))
-        
+
         return pb2.RegisterResponse()
-    
+
     def lookup(self, request, context):
         print("Received lookup request")
         print("  Name: " + request.name)
-        print("  Qualifier: " + request.qualifier)
+        if request.qualifier != "":
+            print("  Qualifier: " + request.qualifier)
         print("Sending lookup response")
 
         # return list of servers with qualifier and service
         response = pb2.LookupResponse()
 
-        if request.qualifier is None:
+        if request.qualifier == "":
             targets = self.namingServer.getTargetsForService(request.name)
         else:
             targets = self.namingServer.getTargetsForServiceQualifier(request.name, request.qualifier)
-        
+
         response.target.extend(targets)
+
         return response
 
     def delete(self, request, context):
@@ -104,10 +106,6 @@ class NameServerServiceImpl(pb2_grpc.NameServerServicer):
 
 if __name__ == '__main__':
     try:
-        # print received arguments
-        print("Received arguments:")
-        for i in range(1, len(sys.argv)):
-            print("  " + sys.argv[i])
 
         # create server
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))

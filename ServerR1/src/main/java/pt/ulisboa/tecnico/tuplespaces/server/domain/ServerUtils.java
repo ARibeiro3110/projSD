@@ -17,7 +17,7 @@ public class ServerUtils {
     }
 
     public void registerServer() {
-        clientService.register(name, qualifier, target); 
+        clientService.register(name, qualifier, target);
     }
 
     public void unregisterServer() {
@@ -28,5 +28,5 @@ public class ServerUtils {
     public void shutdown() {
         clientService.shutdown();
     }
-    
+
 }

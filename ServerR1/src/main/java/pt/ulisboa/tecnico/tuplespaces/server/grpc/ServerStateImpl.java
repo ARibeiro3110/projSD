@@ -83,7 +83,7 @@ public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
     @Override
     public void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {
         // send a single response through the stream
-        responseObserver.onNext(getTupleSpacesStateResponse.newBuilder().addAllTuple(serverState.getTupleSpacesState()).build());
+        responseObserver.onNext(getTupleSpacesStateResponse.newBuilder().addAllTuple(serverState.getTupleSpacesState(request.getQualifier())).build());
 
         // notify the client that the operation has been completed
         responseObserver.onCompleted();

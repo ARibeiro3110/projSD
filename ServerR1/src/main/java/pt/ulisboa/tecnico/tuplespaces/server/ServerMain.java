@@ -15,13 +15,24 @@ public class ServerMain {
     private static final String NAME_SERVER_HOST = "localhost";
     private static final int NAME_SERVER_PORT = 5001;
 
+    /** set flag to true to print debug messages.
+     * the flag can be set using the -debug command line option. */
+    private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
+
+    /** helper method to print debug messages. */
+    private static void debug(String debugMessage) {
+        if (DEBUG_FLAG)
+            System.err.println(debugMessage);
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException{
-        System.out.println(ServerMain.class.getSimpleName());
+        debug(ServerMain.class.getSimpleName());
 
         // receive and print arguments
-        System.out.printf("Received %d arguments%n", args.length);
-            for (int i = 0; i < args.length; i++) {
-                System.out.printf("arg[%d] = %s%n", i, args[i]);
+        debug("Received" + args.length + "arguments\n");
+
+        for (int i = 0; i < args.length; i++) {
+            debug("arg[" + i + "] = " + args[i] + "\n");
         }
 
         // check arguments
@@ -39,9 +50,9 @@ public class ServerMain {
         final ServerUtils serverUtils = new ServerUtils(new ClientService(NAME_SERVER_HOST, NAME_SERVER_PORT), target, qualifier);
 
         // register server
-        System.out.println("Registering server...");
+        debug("Registering server...");
         serverUtils.registerServer();
-    
+
         // create a new server to listen on port
         Server server = ServerBuilder.forPort(port).addService(service).build();
 
@@ -49,14 +60,14 @@ public class ServerMain {
         server.start();
 
         // server threads are running in the background.
-        System.out.println("Server started");
+        debug("Server started");
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("\nShutting down server...");
+            debug("\nShutting down server...");
             server.shutdown();
             serverUtils.unregisterServer();
             serverUtils.shutdown();
-            System.out.println("Server shut down.");
+            debug("Server shut down.");
         }));
 
         // do not exit the main thread. Wait until server is terminated.
