@@ -41,8 +41,9 @@ class NamingServer:
     def getTargetsForService(self, name):
         return [serverEntry.getTarget() for serverEntry in self.serviceEntries[name].serverEntries]
 
-    def getTargetsForService(self, name, qualifier):
-        return self.getTargetsForService(name).filter(lambda serverEntry: serverEntry.qualifier == qualifier)
+    def getTargetsForServiceQualifier(self, name, qualifier):
+        return [serverEntry.getTarget() for serverEntry in self.serviceEntries[name].serverEntries \
+                if serverEntry.qualifier == qualifier]
 
     # delete server from all services
     def deleteServer(self, target):
@@ -82,9 +83,9 @@ class NameServerServiceImpl(pb2_grpc.NameServerServicer):
         response = pb2.LookupResponse()
 
         if request.qualifier is None:
-            targets = self.namingServer.getServiceEntry(request.name, request.qualifier)
+            targets = self.namingServer.getTargetsForService(request.name)
         else:
-            targets = self.namingServer.getServiceEntry(request.name)
+            targets = self.namingServer.getTargetsForServiceQualifier(request.name, request.qualifier)
         
         response.target.extend(targets)
         return response
