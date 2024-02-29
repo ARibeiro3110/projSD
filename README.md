@@ -2,11 +2,9 @@
 
 Distributed Systems Project 2024
 
-*(fill the line below with the group identifier, for example A25 or T25, and then delete this line)*  
-**Group GXX**
+**Group A01**
 
-*(choose one of the following levels and erase the other one)*  
-**Difficulty level: I am Death incarnate! | Bring 'em on!**
+**Difficulty level: I am Death incarnate!**
 
 
 ### Code Identification
@@ -17,13 +15,11 @@ code dependency management, to ensure your code runs using the correct component
 
 ### Team Members
 
-*(fill the table below with the team members, and then delete this line)*
-
-| Number | Name              | User                             | Email                               |
-|--------|-------------------|----------------------------------|-------------------------------------|
-| 11111  | Alice Distributed | <https://github.com/AliceUser>   | <mailto:alice@tecnico.ulisboa.pt>   |
-| 22222  | Bob Systems       | <https://github.com/BobUser>     | <mailto:bob@tecnico.ulisboa.pt>     |
-| 33333  | Charlie Rules     | <https://github.com/CharlieUser> | <mailto:charlie@tecnico.ulisboa.pt> |
+| Number | Name              | User                                    | Email                                                |
+|--------|-------------------|-----------------------------------------|------------------------------------------------------|
+| 102763 | Afonso Ribeiro    | <https://github.com/ARibeiro3110>       | <mailto:afonsodaconceicaoribeiro@tecnico.ulisboa.pt> |
+| 103528 | Luís Correia      | <https://github.com/LuisVicenteCorreia> | <mailto:luis.v.correia@tecnico.ulisboa.pt>           |
+| 102756 | Miguel Freitas    | <https://github.com/mig-mfreitas>       | <mailto:miguelmontefreitas@tecnico.ulisboa.pt>       |
 
 ## Getting Started
 

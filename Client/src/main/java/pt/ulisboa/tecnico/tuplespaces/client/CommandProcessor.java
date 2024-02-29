@@ -24,7 +24,6 @@ public class CommandProcessor {
     }
 
     void parseInput() {
-
         Scanner scanner = new Scanner(System.in);
         boolean exit = false;
 
@@ -71,8 +70,7 @@ public class CommandProcessor {
         scanner.close();
     }
 
-    private void put(String[] split){
-
+    private void put(String[] split) {
         // check if input is valid
         if (!this.inputIsValid(split)) {
             this.printUsage();
@@ -86,7 +84,7 @@ public class CommandProcessor {
         clientService.put(tuple);
     }
 
-    private void read(String[] split){
+    private void read(String[] split) {
         // check if input is valid
         if (!this.inputIsValid(split)) {
             this.printUsage();
@@ -100,9 +98,8 @@ public class CommandProcessor {
         clientService.read(tuple);
     }
 
-
-    private void take(String[] split){
-         // check if input is valid
+    private void take(String[] split) {
+        // check if input is valid
         if (!this.inputIsValid(split)) {
             this.printUsage();
             return;
@@ -115,12 +112,14 @@ public class CommandProcessor {
         clientService.take(tuple);
     }
 
-    private void getTupleSpacesState(String[] split){
-
-        if (split.length != 2){
+    private void getTupleSpacesState(String[] split) {
+        // check if input is valid
+        if (split.length != 2) {
             this.printUsage();
             return;
         }
+
+        // get the qualifier
         String qualifier = split[1];
 
         // get the tuple spaces state
@@ -129,45 +128,48 @@ public class CommandProcessor {
     }
 
     private void sleep(String[] split) {
-      if (split.length != 2){
-        this.printUsage();
-        return;
-      }
-      Integer time;
+        // check if input is valid
+        if (split.length != 2) {
+            this.printUsage();
+            return;
+        }
+        Integer time;
 
-      // checks if input String can be parsed as an Integer
-      try {
-         time = Integer.parseInt(split[1]);
-      } catch (NumberFormatException e) {
-        this.printUsage();
-        return;
-      }
+        // check if input String can be parsed as an Integer
+        try {
+            time = Integer.parseInt(split[1]);
+        } catch (NumberFormatException e) {
+            this.printUsage();
+            return;
+        }
 
-      try {
-        Thread.sleep(time*1000);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+        // sleep for the given time
+        try {
+            Thread.sleep(time*1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void setdelay(String[] split) {
-      if (split.length != 3){
-        this.printUsage();
-        return;
-      }
-      String qualifier = split[1];
-      Integer time;
+        // check if input is valid
+        if (split.length != 3) {
+            this.printUsage();
+            return;
+        }
+        String qualifier = split[1]; // TODO
+        Integer time;
 
-      // checks if input String can be parsed as an Integer
-      try {
-        time = Integer.parseInt(split[2]);
-      } catch (NumberFormatException e) {
-        this.printUsage();
-        return;
-      }
+        // checks if input String can be parsed as an Integer
+        try {
+            time = Integer.parseInt(split[2]);
+        } catch (NumberFormatException e) {
+            this.printUsage();
+            return;
+        }
 
-      // register delay <time> for when calling server <qualifier>
-      System.out.println("TODO: implement setdelay command (only needed in phases 2+3)");
+        // register delay <time> for when calling server <qualifier>
+        System.out.println("TODO: implement setdelay command (only needed in phases 2+3)"); // TODO
     }
 
     private void printUsage() {
@@ -181,7 +183,7 @@ public class CommandProcessor {
                 "- exit\n");
     }
 
-    private boolean inputIsValid(String[] input){
+    private boolean inputIsValid(String[] input) {
         if (input.length < 2
             ||
             !input[1].substring(0,1).equals(BGN_TUPLE)
@@ -197,4 +199,5 @@ public class CommandProcessor {
             return true;
         }
     }
+
 }

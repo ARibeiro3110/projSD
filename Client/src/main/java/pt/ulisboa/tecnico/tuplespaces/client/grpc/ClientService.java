@@ -10,7 +10,7 @@ import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralize
 import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.LookupRequest;
 import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.LookupResponse;
 import pt.ulisboa.tecnico.nameserver.contract.NameServerGrpc;
-import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.*;
+import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.*; // TODO
 
 public class ClientService {
 

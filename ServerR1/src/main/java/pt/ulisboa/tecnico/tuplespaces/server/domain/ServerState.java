@@ -7,10 +7,8 @@ public class ServerState {
 
     private List<String> tuples;
 
-
     public ServerState() {
         this.tuples = new ArrayList<String>();
-
     }
 
     public synchronized void put(String tuple) {
@@ -21,7 +19,7 @@ public class ServerState {
     private String getMatchingTuple(String pattern) {
         for (String tuple : this.tuples) {
             if (tuple.matches(pattern)) {
-            return tuple;
+                return tuple;
             }
         }
         return null;
@@ -29,7 +27,6 @@ public class ServerState {
 
     public synchronized String read(String pattern) {
         // wait until a tuple matching the pattern is available
-
         while (getMatchingTuple(pattern) == null) {
             try {
                 wait();
@@ -44,7 +41,6 @@ public class ServerState {
 
     public synchronized String take(String pattern) {
         // wait until a tuple matching the pattern is available
-
         while (getMatchingTuple(pattern) == null) {
             try {
                 wait();
@@ -56,7 +52,7 @@ public class ServerState {
 
         String tuple = getMatchingTuple(pattern);
 
-        if (tuple != null) {
+        if (tuple != null) { // TODO: is this check necessary?
             tuples.remove(tuple);
         }
 

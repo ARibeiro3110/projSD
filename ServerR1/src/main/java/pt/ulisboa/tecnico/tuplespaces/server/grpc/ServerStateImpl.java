@@ -1,13 +1,11 @@
 package pt.ulisboa.tecnico.tuplespaces.server.grpc;
 
-
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized.*;
 import pt.ulisboa.tecnico.tuplespaces.server.domain.ServerState;
 
 import static io.grpc.Status.*;
-
 
 public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
 
@@ -33,7 +31,6 @@ public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
         responseObserver.onCompleted();
     }
 
-
     @Override
     public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
         String searchPattern = request.getSearchPattern();
@@ -55,14 +52,12 @@ public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
         responseObserver.onCompleted();
     }
 
-
-
     @Override
     public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
         String searchPattern = request.getSearchPattern();
 
         // validate search pattern
-        if (!serverState.isValidSearchPattern(searchPattern)){
+        if (!serverState.isValidSearchPattern(searchPattern)) {
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription("Invalid search pattern format.")
                     .asRuntimeException());
@@ -78,7 +73,6 @@ public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
         // notify the client that the operation has been completed.
         responseObserver.onCompleted();
     }
-
 
     @Override
     public void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {

@@ -18,7 +18,6 @@ public class ClientMain {
     }
 
     public static void main(String[] args) {
-
         debug(ClientMain.class.getSimpleName());
 
         // check arguments
@@ -34,4 +33,5 @@ public class ClientMain {
         // shutdown
         System.exit(0);
     }
+
 }
