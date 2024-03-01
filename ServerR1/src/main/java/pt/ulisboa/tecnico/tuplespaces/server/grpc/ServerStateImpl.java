@@ -9,6 +9,17 @@ import static io.grpc.Status.*;
 
 public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
 
+
+    /** set flag to true to print debug messages.
+     * the flag can be set using the -Ddebug command line option. */
+    private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
+
+    /** helper method to print debug messages. */
+    private static void debug(String debugMessage) {
+        if (DEBUG_FLAG)
+            System.err.println(debugMessage);
+    }
+
     private ServerState serverState = new ServerState();
 
     @Override
@@ -16,13 +27,14 @@ public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
         String tuple = request.getNewTuple();
 
         // validate tuple
-        if (!serverState.isValidTuple(tuple)) {
+        if (!serverState.isValidInput(tuple)) {
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription("Invalid tuple format.")
                     .asRuntimeException());
             return;
         }
         serverState.put(tuple);
+        debug("Tuple " + tuple + " added to the tuple space.");
 
         // send a single response through the stream.
         responseObserver.onNext(PutResponse.newBuilder().build());
@@ -36,7 +48,7 @@ public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
         String searchPattern = request.getSearchPattern();
 
         // validate tuple
-        if (!serverState.isValidSearchPattern(searchPattern)) {
+        if (!serverState.isValidInput(searchPattern)) {
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription("Invalid search pattern format.")
                     .asRuntimeException());
@@ -44,6 +56,7 @@ public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
         }
 
         String result = serverState.read(searchPattern);
+        debug("Tuple " + result + " read from the tuple space.");
 
         // send a single response through the stream.
         responseObserver.onNext(ReadResponse.newBuilder().setResult(result).build());
@@ -57,7 +70,7 @@ public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
         String searchPattern = request.getSearchPattern();
 
         // validate search pattern
-        if (!serverState.isValidSearchPattern(searchPattern)) {
+        if (!serverState.isValidInput(searchPattern)) {
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription("Invalid search pattern format.")
                     .asRuntimeException());
@@ -66,6 +79,7 @@ public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
 
         // read tuple value
         String result = serverState.take(searchPattern);
+        debug("Tuple " + result + " taken from the tuple space.");
 
         // send a single response through the stream
         responseObserver.onNext(TakeResponse.newBuilder().setResult(result).build());
@@ -78,7 +92,7 @@ public class ServerStateImpl extends TupleSpacesGrpc.TupleSpacesImplBase {
     public void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {
         // send a single response through the stream
         responseObserver.onNext(getTupleSpacesStateResponse.newBuilder().addAllTuple(serverState.getTupleSpacesState(request.getQualifier())).build());
-
+        debug("Tuple space state sent to the client.");
         // notify the client that the operation has been completed
         responseObserver.onCompleted();
     }

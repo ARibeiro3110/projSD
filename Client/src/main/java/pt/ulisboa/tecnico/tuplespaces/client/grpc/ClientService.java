@@ -10,12 +10,11 @@ import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralize
 import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.LookupRequest;
 import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.LookupResponse;
 import pt.ulisboa.tecnico.nameserver.contract.NameServerGrpc;
-import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.*; // TODO
 
 public class ClientService {
 
     /** Set flag to true to print debug messages.
-     * The flag can be set using the -debug command line option. */
+     * The flag can be set using the -Ddebug command line option. */
 
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
     private NameServerGrpc.NameServerBlockingStub nameServerStub;
@@ -28,36 +27,29 @@ public class ClientService {
             System.err.println(debugMessage);
     }
 
-
     public ClientService(String host, int port) {
         String target = host + ":" + port; // target for name server
-        debug("Target: " + target);
         this.nameServerStub = createNameServerBlockingStub(target); // create blocking stub for name server
 
-        List<String> targets = lookup("TupleSpaces", null); // TODO: test for no qualifier
+        debug("Looking for server...");
+        target = findServer(); // find tuple spaces server
 
-        if (targets.isEmpty()) {
-            System.out.println("No servers available");
-            System.exit(1); // FIXME
-        }
-
-        target = targets.get(0); // use first server available
         this.tupleSpacesStub = createTupleSpacesBlockingStub(target); // create blocking stub for tuple spaces server
     }
 
-
     private NameServerGrpc.NameServerBlockingStub createNameServerBlockingStub(String target) {
+        debug("Creating NameServerBlockingStub for target " + target + "...");
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         return NameServerGrpc.newBlockingStub(channel);
     }
 
     private TupleSpacesGrpc.TupleSpacesBlockingStub createTupleSpacesBlockingStub(String target) {
+        debug("Creating TupleSpacesBlockingStub for target " + target + "...");
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         return TupleSpacesGrpc.newBlockingStub(channel);
     }
 
-    // TODO should this be void or return list?
-    public List<String> lookup(String name, String qualifier) { // TODO: qualifier is optional, second function?
+    public List<String> lookup(String name, String qualifier) {
         try {
             LookupResponse targets;
 
@@ -71,15 +63,32 @@ public class ClientService {
 
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
-            e.getStatus().getDescription()); // TODO: should we keep these prints? maybe as debugs?
-            return null; // FIXME
+            e.getStatus().getDescription());
+            return null;
         }
+    }
+
+    private String findServer() {
+        List<String> targets = lookup("TupleSpaces", null);
+
+        while (targets == null || targets.isEmpty()) {
+            try {
+                System.out.println("No servers found. Retrying in 5 seconds...");
+                Thread.sleep(5000); // sleep for 5 second before trying again
+            } catch (InterruptedException e) {
+                System.out.println("Caught exception: " + e.getMessage());
+            }
+            targets = lookup("TupleSpaces", null);
+        }
+
+        return targets.get(0);
     }
 
     public void put(String tuple) {
         try {
+            debug("Sending put request with tuple " + tuple + "...");
             tupleSpacesStub.put(PutRequest.newBuilder().setNewTuple(tuple).build());
-            System.out.println("OK\n");   // TODO: place outside ClientService?
+            System.out.println("OK\n");
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());
@@ -88,6 +97,7 @@ public class ClientService {
 
     public void read(String searchPattern) {
         try {
+            debug("Sending read request with search pattern " + searchPattern + "...");
             ReadResponse result = tupleSpacesStub.read(ReadRequest.newBuilder().setSearchPattern(searchPattern).build());
             System.out.println("OK\n" + result.getResult() + "\n");
         } catch (StatusRuntimeException e) {
@@ -98,6 +108,7 @@ public class ClientService {
 
     public void take(String searchPattern) {
         try {
+            debug("Sending take request with search pattern " + searchPattern + "...");
             TakeResponse result = tupleSpacesStub.take(TakeRequest.newBuilder().setSearchPattern(searchPattern).build());
             System.out.println("OK\n" + result.getResult() + "\n");
         } catch (StatusRuntimeException e) {
@@ -122,6 +133,7 @@ public class ClientService {
 
     public void shutdown() {
         // Shutdown channel before stopping the process
+        debug("Shutting down channel...");
         channel.shutdownNow();
     }
 

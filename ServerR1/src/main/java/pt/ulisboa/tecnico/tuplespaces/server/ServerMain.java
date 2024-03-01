@@ -16,7 +16,7 @@ public class ServerMain {
     private static final int NAME_SERVER_PORT = 5001;
 
     /** set flag to true to print debug messages.
-     * the flag can be set using the -debug command line option. */
+     * the flag can be set using the -Ddebug command line option. */
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
     /** helper method to print debug messages. */
@@ -29,14 +29,13 @@ public class ServerMain {
         debug(ServerMain.class.getSimpleName());
 
         // receive and print arguments
-        debug("Received" + args.length + "arguments\n");
+        debug("Received " + args.length + " arguments\n");
 
         for (int i = 0; i < args.length; i++) {
             debug("arg[" + i + "] = " + args[i] + "\n");
         }
 
         // check arguments
-        // TODO: qualifier is not mandatory
         if (args.length < 2) {
             System.err.println("Argument(s) missing!");
             System.err.printf("Usage: mvn exec:java -Dexec.args=<port> <qualifier>", ServerMain.class.getName());
@@ -49,22 +48,23 @@ public class ServerMain {
         final BindableService service = new ServerStateImpl();
         final ServerUtils serverUtils = new ServerUtils(new ClientService(NAME_SERVER_HOST, NAME_SERVER_PORT), target, qualifier);
 
-        // register server
-        debug("Registering server...");
-        serverUtils.registerServer();
-
         // create a new server to listen on port
         Server server = ServerBuilder.forPort(port).addService(service).build();
 
         // start the server
         server.start();
-
-        // server threads are running in the background.
+        
+        // server threads are running in the background
         debug("Server started");
+        
+        // register server
+        debug("Registering server...");
+        serverUtils.registerServer();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             debug("\nShutting down server...");
             server.shutdown();
+            debug("Unregistering server...");
             serverUtils.unregisterServer();
             serverUtils.shutdown();
             debug("Server shut down.");

@@ -6,6 +6,8 @@ import java.util.List;
 public class ServerState {
 
     private List<String> tuples;
+    private static final String BGN_TUPLE = "<";
+    private static final String END_TUPLE = ">";
 
     public ServerState() {
         this.tuples = new ArrayList<String>();
@@ -31,8 +33,7 @@ public class ServerState {
             try {
                 wait();
             } catch (InterruptedException e) {
-                // TODO: handle exception
-                e.printStackTrace();
+                System.out.println("Error: " + e.getMessage());
             }
         }
 
@@ -45,14 +46,13 @@ public class ServerState {
             try {
                 wait();
             } catch (InterruptedException e) {
-                // TODO: handle exception
-                e.printStackTrace();
+                System.out.println("Error: " + e.getMessage());
             }
         }
 
         String tuple = getMatchingTuple(pattern);
 
-        if (tuple != null) { // TODO: is this check necessary?
+        if (tuple != null) {
             tuples.remove(tuple);
         }
 
@@ -63,16 +63,14 @@ public class ServerState {
         return this.tuples;
     }
 
-    public boolean isValidTuple(String tuple) {
-        // if the tuple does not match the required format, it's invalid.
-        // tuple format: <string1,string2,...> with alphanumeric strings
-        return tuple.matches("^<\\w+(?:,\\w+)*>$");
-    }
-
-    public boolean isValidSearchPattern(String searchPattern) {
-        // if the search pattern does not match the required format, it's invalid.
-        // tuple format: <string1,string2,...> with any string
-        return searchPattern.matches("^<[^,]+(?:,[^,]+)*>$");
+    public boolean isValidInput(String input) {
+        if (!input.substring(0,1).equals(BGN_TUPLE)
+            ||
+            !input.endsWith(END_TUPLE)) 
+            {
+            return false;
+        }
+        return true;
     }
 
 }

@@ -8,6 +8,12 @@ import NameServer_pb2_grpc as pb2_grpc
 # define the port
 PORT = 5001
 
+# debug mode
+debug_mode = False
+def debug(message):
+    if debug_mode:
+        print(message)
+
 # entry with target and qualifier of a server
 class ServerEntry:
     def __init__(self, target, qualifier):
@@ -50,9 +56,13 @@ class NamingServer:
         self.serviceEntries[ServiceEntry.getName()] = ServiceEntry
 
     def getTargetsForService(self, name):
+        if name not in self.serviceEntries:
+            return []
         return [serverEntry.getTarget() for serverEntry in self.serviceEntries[name].getServerEntries()]
 
     def getTargetsForServiceQualifier(self, name, qualifier):
+        if name not in self.serviceEntries:
+            return []
         return [serverEntry.getTarget() for serverEntry in self.serviceEntries[name].getServerEntries() \
                 if serverEntry.getQualifier() == qualifier]
 
@@ -67,14 +77,12 @@ class NameServerServiceImpl(pb2_grpc.NameServerServicer):
     def __init__(self):
         self.namingServer = NamingServer()
 
-    # TODO throw exception if there are errors
     # register a server for a service
     def register(self, request, context):
-        print("Received register request")
-        print("  Name: " + request.name)
-        print("  Qualifier: " + request.qualifier)
-        print("  Target: " + request.target)
-        print("Sending register response")
+        debug("Received register request")
+        debug("  Name: " + request.name)
+        debug("  Qualifier: " + request.qualifier)
+        debug("  Target: " + request.target)
 
         # add service entry if it doesn't exist
         if request.name not in self.namingServer.serviceEntries:
@@ -84,19 +92,20 @@ class NameServerServiceImpl(pb2_grpc.NameServerServicer):
         self.namingServer.serviceEntries[request.name].addServerEntry( \
             ServerEntry(request.target, request.qualifier))
 
+        debug("Sending register response")
+
         return pb2.RegisterResponse()
 
     # lookup server targets for a service
     def lookup(self, request, context):
-        print("Received lookup request")
-        print("  Name: " + request.name)
+        debug("Received lookup request")
+        debug("  Name: " + request.name)
         if request.qualifier != "":
-            print("  Qualifier: " + request.qualifier)
-        print("Sending lookup response")
-
+            debug("  Qualifier: " + request.qualifier)
+        
         # return list of servers with qualifier and service
         response = pb2.LookupResponse()
-
+    
         if request.qualifier == "":
             targets = self.namingServer.getTargetsForService(request.name)
         else:
@@ -105,21 +114,27 @@ class NameServerServiceImpl(pb2_grpc.NameServerServicer):
         # extend method adds all elements of a list to the repeated field
         response.target.extend(targets)
 
+        debug("Sending lookup response")
+
         return response
 
     def delete(self, request, context):
-        print("Received delete request")
-        print("  Name: " + request.name)
-        print("  Target: " + request.target)
-        print("Sending delete response")
+        debug("Received delete request")
+        debug("  Name: " + request.name)
+        debug("  Target: " + request.target)
 
         # delete server from naming server
         self.namingServer.deleteServer(request.target)
+        
+        debug("Sending delete response")
 
         return pb2.DeleteResponse()
 
 
 if __name__ == '__main__':
+    # check if debug mode is enabled
+    debug_mode = '-Ddebug' in sys.argv
+
     try:
         # create server
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
@@ -129,10 +144,10 @@ if __name__ == '__main__':
         server.add_insecure_port('[::]:'+str(PORT))
         # start server
         server.start()
-        # print message
-        print("Server listening on port " + str(PORT))
-        # print termination message
-        print("Press CTRL+C to terminate")
+        # debug message
+        debug("Server listening on port " + str(PORT))
+        # debug termination message
+        debug("Press CTRL+C to terminate")
         # wait for server to finish
         server.wait_for_termination()
 
