@@ -20,7 +20,7 @@
 		<version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
 		<version.exec-maven-plugin>3.0.0</version.exec-maven-plugin>
 
-		<mainclass>pt.ulisboa.tecnico.tuplespaces.server.ServerMain</mainclass>
+		<mainclass>pt.ulisboa.tecnico.tuplespaces.serverR1.ServerMain</mainclass>
 		<server.port>8000</server.port>
 		<server.qual>A</server.qual>
 

@@ -1,9 +1,9 @@
-package pt.ulisboa.tecnico.tuplespaces.server.grpc;
+package pt.ulisboa.tecnico.tuplespaces.serverR1.grpc;
 
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized.*;
-import pt.ulisboa.tecnico.tuplespaces.server.domain.ServerState;
+import pt.ulisboa.tecnico.tuplespaces.serverR1.domain.ServerState;
 
 import static io.grpc.Status.*;
 

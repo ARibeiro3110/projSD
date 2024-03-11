@@ -170,12 +170,20 @@ public class ClientService {
 
     public void getTupleSpacesState(int qualifier) {
         try {
-            // TODO: implement getTupleSpacesState
-            // getTupleSpacesStateResponse tuples = tupleSpacesStub.getTupleSpacesState(getTupleSpacesStateRequest.newBuilder().build());
-            // System.out.println("OK");
+            tupleSpacesStubs.get(qualifier).getTupleSpacesState(
+                    getTupleSpacesStateRequest.getDefaultInstance(),
+                    new ClientObserver<getTupleSpacesStateResponse>(collector));
+
+            try {
+                collector.waitForTupleSpacesStateResponse();
+            } catch (InterruptedException e) {
+                System.out.println("Caught exception: " + e.getMessage());
+            }
+            List<String> tuples = collector.getTupleSpacesStateResponse();
+            System.out.println("OK");
 
             // print in format [tuple1, tuple2, ...]
-            //System.out.println("[" + String.join(", ", tuples.getTupleList()) + "]\n");
+            System.out.println("[" + String.join(", ", tuples) + "]\n");
 
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +

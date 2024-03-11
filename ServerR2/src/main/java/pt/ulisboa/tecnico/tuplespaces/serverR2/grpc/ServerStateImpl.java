@@ -1,9 +1,9 @@
-package pt.ulisboa.tecnico.tuplespaces.server.grpc;
+package pt.ulisboa.tecnico.tuplespaces.serverR2.grpc;
 
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.*;
-import pt.ulisboa.tecnico.tuplespaces.server.domain.ServerState;
+import pt.ulisboa.tecnico.tuplespaces.serverR2.domain.ServerState;
 
 import static io.grpc.Status.*;
 
@@ -87,13 +87,13 @@ public class ServerStateImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaIm
         // responseObserver.onCompleted();
     //}
 
-    // @Override
-    // public void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {
-    //     // send a single response through the stream
-    //     responseObserver.onNext(getTupleSpacesStateResponse.newBuilder().addAllTuple(serverState.getTupleSpacesState(request.getQualifier())).build());
-    //     debug("Tuple space state sent to the client.");
-    //     // notify the client that the operation has been completed
-    //     responseObserver.onCompleted();
-    // }
+    @Override
+    public void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {
+        // send a single response through the stream
+        responseObserver.onNext(getTupleSpacesStateResponse.newBuilder().addAllTuple(serverState.getTupleSpacesState()).build());
+        debug("Tuple space state sent to the client.");
+        // notify the client that the operation has been completed
+        responseObserver.onCompleted();
+    }
 
 }

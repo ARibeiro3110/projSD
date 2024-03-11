@@ -1,4 +1,4 @@
-package pt.ulisboa.tecnico.tuplespaces.server.grpc;
+package pt.ulisboa.tecnico.tuplespaces.serverR2.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -8,13 +8,15 @@ import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.*;
 
 public class ClientService {
 
+    private static final String NAME_SERVER_TARGET = "localhost:5001";
+
     private NameServerGrpc.NameServerBlockingStub stub;
     private ManagedChannel channel;
 
     private final String target;
 
-    public ClientService(String host, int port) {
-        this.target = host + ":" + port;
+    public ClientService() {
+        this.target = NAME_SERVER_TARGET;
         this.stub = createBlockingStub();
     }
 

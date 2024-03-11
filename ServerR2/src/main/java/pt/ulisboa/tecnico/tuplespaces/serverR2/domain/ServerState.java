@@ -1,4 +1,4 @@
-package pt.ulisboa.tecnico.tuplespaces.server.domain;
+package pt.ulisboa.tecnico.tuplespaces.serverR2.domain;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,7 +59,7 @@ public class ServerState {
         return tuple;
     }
 
-    public synchronized List<String> getTupleSpacesState(String qualifier) {
+    public synchronized List<String> getTupleSpacesState() {
         return this.tuples;
     }
 

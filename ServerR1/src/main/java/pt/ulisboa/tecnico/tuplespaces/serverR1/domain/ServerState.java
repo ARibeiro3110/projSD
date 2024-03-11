@@ -1,4 +1,4 @@
-package pt.ulisboa.tecnico.tuplespaces.server.domain;
+package pt.ulisboa.tecnico.tuplespaces.serverR1.domain;
 
 import java.util.ArrayList;
 import java.util.List;
