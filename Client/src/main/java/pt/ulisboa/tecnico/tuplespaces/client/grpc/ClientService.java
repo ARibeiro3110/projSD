@@ -10,8 +10,12 @@ import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralize
 import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.LookupRequest;
 import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.LookupResponse;
 import pt.ulisboa.tecnico.nameserver.contract.NameServerGrpc;
+import pt.ulisboa.tecnico.tuplespaces.client.util.OrderedDelayer;
 
 public class ClientService {
+
+    /** Default host and port for the name server. */
+    private static final String NAME_SERVER_TARGET = "localhost:5001";
 
     /** Set flag to true to print debug messages.
      * The flag can be set using the -Ddebug command line option. */
@@ -20,6 +24,8 @@ public class ClientService {
     private NameServerGrpc.NameServerBlockingStub nameServerStub;
     private TupleSpacesGrpc.TupleSpacesBlockingStub tupleSpacesStub;
     private ManagedChannel channel;
+    private String target;
+    private OrderedDelayer delayer;
 
     /** Helper method to print debug messages. */
     private static void debug(String debugMessage) {
@@ -27,23 +33,37 @@ public class ClientService {
             System.err.println(debugMessage);
     }
 
-    public ClientService(String host, int port) {
-        String target = host + ":" + port; // target for name server
-        this.nameServerStub = createNameServerBlockingStub(target); // create blocking stub for name server
+    public ClientService(int numServers) {
+        delayer = new OrderedDelayer(numServers);
+
+        target = NAME_SERVER_TARGET; // target for name server
+        this.nameServerStub = createNameServerBlockingStub(); // create blocking stub for name server
 
         debug("Looking for server...");
         target = findServer(); // find tuple spaces server
 
-        this.tupleSpacesStub = createTupleSpacesBlockingStub(target); // create blocking stub for tuple spaces server
+        this.tupleSpacesStub = createTupleSpacesBlockingStub(); // create blocking stub for tuple spaces server
     }
 
-    private NameServerGrpc.NameServerBlockingStub createNameServerBlockingStub(String target) {
+    /* This method allows the command processor to set the request delay assigned to a given server */
+    public void setDelay(int id, int delay) {
+        delayer.setDelay(id, delay);
+
+        /* TODO: Remove this debug snippet */
+        System.out.println("[Debug only]: After setting the delay, I'll test it");
+        for (Integer i : delayer) {
+          System.out.println("[Debug only]: Now I can send request to stub[" + i + "]");
+      }
+      System.out.println("[Debug only]: Done.");
+    }
+
+    private NameServerGrpc.NameServerBlockingStub createNameServerBlockingStub() {
         debug("Creating NameServerBlockingStub for target " + target + "...");
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         return NameServerGrpc.newBlockingStub(channel);
     }
 
-    private TupleSpacesGrpc.TupleSpacesBlockingStub createTupleSpacesBlockingStub(String target) {
+    private TupleSpacesGrpc.TupleSpacesBlockingStub createTupleSpacesBlockingStub() {
         debug("Creating TupleSpacesBlockingStub for target " + target + "...");
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         return TupleSpacesGrpc.newBlockingStub(channel);
@@ -117,9 +137,9 @@ public class ClientService {
         }
     }
 
-    public void getTupleSpacesState(String qualifier) {
+    public void getTupleSpacesState(int qualifier) {
         try {
-            getTupleSpacesStateResponse tuples = tupleSpacesStub.getTupleSpacesState(getTupleSpacesStateRequest.newBuilder().setQualifier(qualifier).build());
+            getTupleSpacesStateResponse tuples = tupleSpacesStub.getTupleSpacesState(getTupleSpacesStateRequest.newBuilder().build());
             System.out.println("OK");
 
             // print in format [tuple1, tuple2, ...]
