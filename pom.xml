@@ -16,9 +16,9 @@
 		<module>Contract</module>
 		<module>Client</module>
 		<module>ServerR1</module>
-
-		<!-- These should only be used in phases 2 and 3
 		<module>ServerR2</module>
+
+		<!-- This should only be used for phase 3
 		<module>ServerR3</module> -->
 
 	</modules>

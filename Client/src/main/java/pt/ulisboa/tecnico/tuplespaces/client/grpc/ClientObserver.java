@@ -1,8 +1,8 @@
 package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 
 import io.grpc.stub.StreamObserver;
-import pt.ulisboa.tecnico.tuplespaces.client.grpc.ResponseCollector;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.*;
+
 
 public class ClientObserver<Response> implements StreamObserver<Response> {
 
