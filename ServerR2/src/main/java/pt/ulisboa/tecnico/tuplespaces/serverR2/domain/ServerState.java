@@ -2,47 +2,90 @@ package pt.ulisboa.tecnico.tuplespaces.serverR2.domain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ServerState {
 
-    private List<String> tuples;
+    private class ServerEntry {
+        private String tuple;
+        private boolean isLocked;
+        private int clientId;
+        private Lock mutex;
+
+        public ServerEntry(String tuple, boolean isLocked, int clientId) {
+            this.tuple = tuple;
+            this.isLocked = isLocked;
+            this.clientId = clientId;
+            this.mutex = new ReentrantLock();
+        }
+
+        public String getTuple() {
+            return this.tuple;
+        }
+
+        public boolean isLocked() {
+            return this.isLocked;
+        }
+
+        public int getClientId() {
+            return this.clientId;
+        }
+
+        private void setLocked(boolean isLocked) {
+            this.isLocked = isLocked;
+        }
+
+        public void setClientId(int clientId) {
+            this.clientId = clientId;
+        }
+
+        public void lock() {
+            setLocked(true);
+            this.mutex.lock();
+        }
+
+        public void unlock() {
+            this.mutex.unlock();
+            setLocked(false);
+        }
+    }
+
+    private List<ServerEntry> entries;
     private static final String BGN_TUPLE = "<";
     private static final String END_TUPLE = ">";
 
     public ServerState() {
-        this.tuples = new ArrayList<String>();
+        this.entries = new ArrayList<ServerEntry>();
     }
 
     public synchronized void put(String tuple) {
-        tuples.add(tuple);
+        entries.add(new ServerEntry(tuple, false, 0));
         notifyAll();
     }
 
-    private String getMatchingTuple(String pattern) {
-        for (String tuple : this.tuples) {
-            if (tuple.matches(pattern)) {
-                return tuple;
+    private ServerEntry getFirstMatchingEntry(String pattern) {
+        for (ServerEntry entry : this.entries) {
+            if (entry.getTuple().matches(pattern)) {
+                return entry;
             }
         }
         return null;
     }
 
-    public synchronized String read(String pattern) {
-        // wait until a tuple matching the pattern is available
-        while (getMatchingTuple(pattern) == null) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                System.out.println("Error: " + e.getMessage());
+    private List<ServerEntry> getAllMatchingEntries(String pattern) {
+        List<ServerEntry> matchingEntries = new ArrayList<ServerEntry>();
+        for (ServerEntry entry : this.entries) {
+            if (entry.getTuple().matches(pattern)) {
+                matchingEntries.add(entry);
             }
         }
-
-        return getMatchingTuple(pattern);
+        return matchingEntries;
     }
 
-    public synchronized String take(String pattern) {
+    public synchronized String read(String pattern) {
         // wait until a tuple matching the pattern is available
-        while (getMatchingTuple(pattern) == null) {
+        while (getFirstMatchingEntry(pattern) == null) {
             try {
                 wait();
             } catch (InterruptedException e) {
@@ -50,17 +93,45 @@ public class ServerState {
             }
         }
 
-        String tuple = getMatchingTuple(pattern);
+        return getFirstMatchingEntry(pattern).getTuple();
+    }
 
-        if (tuple != null) {
-            tuples.remove(tuple);
+    public synchronized List<String> takePhase1(String pattern, int clientId) {
+        List<ServerEntry> matchingEntries;
+
+        // wait until a tuple matching the pattern is available
+        while ((matchingEntries = getAllMatchingEntries(pattern)).isEmpty()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                System.out.println("Error: " + e.getMessage());
+            }
         }
 
-        return tuple;
+        List<String> tuples = new ArrayList<String>();
+
+        // check if all matching tuples are unlocked
+        for (ServerEntry entry : matchingEntries) {
+            if (entry.isLocked() && entry.getClientId() != clientId)
+                return null;
+        }
+
+        // lock all matching tuples
+        for (ServerEntry entry : matchingEntries) {
+            entry.lock();
+            entry.setClientId(clientId);
+            tuples.add(entry.getTuple());
+        }
+
+        return tuples;
     }
 
     public synchronized List<String> getTupleSpacesState() {
-        return this.tuples;
+        List<String> tupleSpacesState = new ArrayList<String>();
+        for (ServerEntry entry : this.entries) {
+            tupleSpacesState.add(entry.getTuple());
+        }
+        return tupleSpacesState;
     }
 
     public boolean isValidInput(String input) {

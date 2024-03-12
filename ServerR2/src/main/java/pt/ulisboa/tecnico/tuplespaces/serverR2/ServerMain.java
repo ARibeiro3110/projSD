@@ -50,10 +50,10 @@ public class ServerMain {
 
         // start the server
         server.start();
-        
+
         // server threads are running in the background
         debug("Server started");
-        
+
         // register server
         debug("Registering server...");
         serverUtils.registerServer();

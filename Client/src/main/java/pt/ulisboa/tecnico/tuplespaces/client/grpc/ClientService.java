@@ -27,6 +27,7 @@ public class ClientService {
     private List<ManagedChannel> channels;
     private OrderedDelayer delayer;
     private int numServers;
+    private int clientId;
     private ResponseCollector collector;
 
     /** Helper method to print debug messages. */
@@ -35,14 +36,16 @@ public class ClientService {
             System.err.println(debugMessage);
     }
 
-    public ClientService(int numServers) {
-        delayer = new OrderedDelayer(numServers);
+    public ClientService(int numServers, int clientId) {
         this.numServers = numServers;
-        collector = new ResponseCollector();
+        this.clientId = clientId;
+
+        delayer = new OrderedDelayer(numServers);
+        collector = new ResponseCollector(numServers);
 
         channels = new ArrayList<ManagedChannel>();
         tupleSpacesStubs = new ArrayList<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub>();
-        
+
         this.nameServerStub = createNameServerBlockingStub(); // create blocking stub for name server
 
         debug("Looking for servers...");
@@ -94,20 +97,26 @@ public class ClientService {
     }
 
     private void findServers() {
-        List<String> targets = lookup("TupleSpaces", null);
 
-        while (targets == null || targets.isEmpty()) {
-            try {
-                System.out.println("No servers found. Retrying in 5 seconds...");
-                Thread.sleep(5000); // sleep for 5 second before trying again
-            } catch (InterruptedException e) {
-                System.out.println("Caught exception: " + e.getMessage());
+        List<String> qualifiers = List.of("A", "B", "C");
+
+        for (String qualifier : qualifiers) {
+            if (tupleSpacesStubs.size() == numServers)
+                break;
+
+            List<String> targets = lookup("TupleSpaces", qualifier);
+
+            while (targets == null || targets.isEmpty()) {
+                try {
+                    System.out.println("Server with qualifier " + qualifier + " not found. Retrying in 5 seconds...");
+                    Thread.sleep(5000); // sleep for 5 second before trying again
+                } catch (InterruptedException e) {
+                    System.out.println("Caught exception: " + e.getMessage());
+                }
+                targets = lookup("TupleSpaces", qualifier);
             }
-            targets = lookup("TupleSpaces", null);
-        }
-        
-        for (String target : targets) {
-            createTupleSpacesStub(target);
+
+            createTupleSpacesStub(targets.get(0));
         }
     }
 
@@ -121,11 +130,11 @@ public class ClientService {
             }
 
             try {
-                collector.waitForPutResponses(numServers);
+                collector.waitForPutResponses();
             } catch (InterruptedException e) {
                 System.out.println("Caught exception: " + e.getMessage());
             }
-            
+
             System.out.println("OK\n");
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
@@ -141,13 +150,13 @@ public class ClientService {
                 ReadRequest request = ReadRequest.newBuilder().setSearchPattern(searchPattern).build();
                 tupleSpacesStubs.get(i).read(request, new ClientObserver<ReadResponse>(collector));
             }
-            
+
              try {
                 collector.waitForReadResponse();
             } catch (InterruptedException e) {
                 System.out.println("Caught exception: " + e.getMessage());
             }
-            
+
             System.out.println("OK\n" + collector.getReadTuple() + "\n");
 
         } catch (StatusRuntimeException e) {
@@ -156,12 +165,23 @@ public class ClientService {
         }
     }
 
-    public void take(String searchPattern) {
+    public void takePhase1(String searchPattern) {
         try {
             debug("Sending take request with search pattern " + searchPattern + "...");
-            // TODO: implement take
-            // TakeResponse result = tupleSpacesStub.take(TakeRequest.newBuilder().setSearchPattern(searchPattern).build());
-            // System.out.println("OK\n" + result.getResult() + "\n");
+
+            for (int i = 0; i < numServers; i++) {
+                TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(searchPattern).setClientId(clientId).build();
+                tupleSpacesStubs.get(i).takePhase1(request, new ClientObserver<TakePhase1Response>(collector));
+            }
+
+            try {
+                collector.waitForTakeResponse();
+            } catch (InterruptedException e) {
+                System.out.println("Caught exception: " + e.getMessage());
+            }
+
+            // System.out.println("OK\n" + collector.getTakeTuple() + "\n");
+
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());

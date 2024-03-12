@@ -4,8 +4,9 @@ import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.*;
 import pt.ulisboa.tecnico.tuplespaces.serverR2.domain.ServerState;
-
 import static io.grpc.Status.*;
+
+import java.util.List;
 
 public class ServerStateImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaImplBase {
 
@@ -59,6 +60,31 @@ public class ServerStateImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaIm
 
         // send a single response through the stream.
         responseObserver.onNext(ReadResponse.newBuilder().setResult(result).build());
+
+        // notify the client that the operation has been completed.
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    // takePhase1
+    public void takePhase1(TakePhase1Request request, StreamObserver<TakePhase1Response> responseObserver) {
+        String searchPattern = request.getSearchPattern();
+        int clientId = request.getClientId();
+
+        // validate search pattern
+        if (!serverState.isValidInput(searchPattern)) {
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription("Invalid search pattern format.")
+                    .asRuntimeException());
+            return;
+        }
+
+        // acquire locks on matching tuples
+        List<String> reservedTuples = serverState.takePhase1(searchPattern, clientId);
+        debug("Reserved tuples:\n"+ reservedTuples == null ? "null" : reservedTuples.toString());
+
+        // send a single response through the stream
+        responseObserver.onNext(TakePhase1Response.newBuilder().addAllReservedTuples(reservedTuples).build());
 
         // notify the client that the operation has been completed.
         responseObserver.onCompleted();

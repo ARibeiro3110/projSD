@@ -23,6 +23,8 @@ public class ClientObserver<Response> implements StreamObserver<Response> {
         } else if (r instanceof getTupleSpacesStateResponse) {
             collector.setTuples(((getTupleSpacesStateResponse) r).getTupleList());
             System.out.println("Received response: getTupleSpacesStateResponse" ); // TODO: remove print
+        } else if (r instanceof TakePhase1Response) {
+            collector.addTakeTuples(((TakePhase1Response) r).getReservedTuplesList());
         }
     }
 

@@ -102,10 +102,10 @@ class NameServerServiceImpl(pb2_grpc.NameServerServicer):
         debug("  Name: " + request.name)
         if request.qualifier != "":
             debug("  Qualifier: " + request.qualifier)
-        
+
         # return list of servers with qualifier and service
         response = pb2.LookupResponse()
-    
+
         if request.qualifier == "":
             targets = self.namingServer.getTargetsForService(request.name)
         else:
@@ -125,7 +125,7 @@ class NameServerServiceImpl(pb2_grpc.NameServerServicer):
 
         # delete server from naming server
         self.namingServer.deleteServer(request.target)
-        
+
         debug("Sending delete response")
 
         return pb2.DeleteResponse()
@@ -152,5 +152,5 @@ if __name__ == '__main__':
         server.wait_for_termination()
 
     except KeyboardInterrupt:
-        print("NameServer stopped")
+        debug("NameServer stopped")
         exit(0)
