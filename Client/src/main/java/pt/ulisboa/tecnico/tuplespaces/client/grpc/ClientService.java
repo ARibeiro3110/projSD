@@ -2,6 +2,7 @@ package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -167,25 +168,154 @@ public class ClientService {
 
     public void takePhase1(String searchPattern) {
         try {
-            debug("Sending take request with search pattern " + searchPattern + "...");
+            debug("Sending take request (phase 1) with search pattern " + searchPattern + "...");
 
-            for (int i = 0; i < numServers; i++) {
-                TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(searchPattern).setClientId(clientId).build();
-                tupleSpacesStubs.get(i).takePhase1(request, new ClientObserver<TakePhase1Response>(collector));
+            while (true) {
+                for (int i = 0; i < numServers; i++) {
+                    TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(searchPattern).setClientId(clientId).build();
+                    tupleSpacesStubs.get(i).takePhase1(request, new ClientObserver<TakePhase1Response>(collector));
+                }
+
+                try {
+                    collector.waitForTakePhase1Response();
+                } catch (InterruptedException e) {
+                    System.out.println("Caught exception: " + e.getMessage());
+                }
+
+                List<List<String>> takePhase1Tuples = collector.getTakePhase1Tuples();
+
+                // count number of rejections (null responses)
+                int numRejections = (int) takePhase1Tuples.stream().filter(t -> t == null).count();
+
+                if (numRejections == 0) {
+                    // received confirmation from all servers
+                    List<String> intersection = intersection(takePhase1Tuples);
+                    if (!intersection.isEmpty()) {
+                        // end of phase 1, send take phase 2 request
+                        takePhase2(intersection.get(0), clientId);
+                        break;
+
+                    } else {
+                        // no intersection, backoff
+                        try {
+                            Thread.sleep(1000); // TODO: decide on backoff time
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        // resend take phase 1 request
+                        continue;
+                    }
+                }
+
+                else if (numRejections == 1) {
+                    // a majority of servers accepted the request
+                    // backoff and resend take phase 1 request
+                    try {
+                        Thread.sleep(1000); // TODO: decide on backoff time
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    // resend take phase 1 request
+                    continue;
+                }
+
+                else if (numRejections == 2) {
+                    // only a minority of servers accepted the request
+                    // send take phase 1 release request
+                    takePhase1Release(clientId);
+
+                    // backoff
+                    try {
+                        Thread.sleep(1000); // TODO: decide on backoff time
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    // resend take phase 1 request
+                    continue;
+                }
+
+                else if (numRejections == 3) {
+                    // rejected by all servers
+                    // resend take phase 1 request
+                    Random random = new Random();
+                    try {
+                        Thread.sleep(random.nextInt(5000)); // TODO: decide on backoff time
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    // resend take phase 1 request
+                    continue;
+                }
+
+                else {
+                    System.out.println("Error: unexpected number of rejections");;
+                }
+
             }
-
-            try {
-                collector.waitForTakeResponse();
-            } catch (InterruptedException e) {
-                System.out.println("Caught exception: " + e.getMessage());
-            }
-
-            // System.out.println("OK\n" + collector.getTakeTuple() + "\n");
 
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());
         }
+    }
+
+    public void takePhase1Release(int clientId) {
+        try {
+            debug("Sending take phase 1 release request with client id " + clientId + "...");
+
+            for (int i = 0; i < numServers; i++) {
+                TakePhase1ReleaseRequest request = TakePhase1ReleaseRequest.newBuilder().setClientId(clientId).build();
+                tupleSpacesStubs.get(i).takePhase1Release(request, new ClientObserver<TakePhase1ReleaseResponse>(collector));
+            }
+
+            try {
+                collector.waitForTakeReleaseResponse();
+            } catch (InterruptedException e) {
+                System.out.println("Caught exception: " + e.getMessage());
+            }
+
+        } catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " +
+            e.getStatus().getDescription());
+        }
+    }
+
+    public void takePhase2(String tuple, int clientId) {
+        try {
+            debug("Sending take request (phase 2) with tuple " + tuple + " and client id " + clientId + "...");
+
+            for (int i = 0; i < numServers; i++) {
+                TakePhase2Request request = TakePhase2Request.newBuilder().setTuple(tuple).setClientId(clientId).build();
+                tupleSpacesStubs.get(i).takePhase2(request, new ClientObserver<TakePhase2Response>(collector));
+            }
+
+            try {
+                collector.waitForTakePhase2Response(); // TODO: resend remove request if not all servers respond (step 3)
+                                                       // TODO: when does this happen?
+            } catch (InterruptedException e) {
+                System.out.println("Caught exception: " + e.getMessage());
+            }
+        }
+        catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " +
+            e.getStatus().getDescription());
+        }
+    }
+
+    public List<String> intersection(List<List<String>> lists){
+        if (lists.size() == 1) // only one list
+            return new ArrayList<String>(); // TODO: what should we return here?
+
+        List<String> intersection = new ArrayList<String>(lists.get(0));
+        for (int i = 1; i < lists.size(); i++) {
+            intersection.retainAll(lists.get(i));
+        }
+
+        return intersection;
     }
 
     public void getTupleSpacesState(int qualifier) {
