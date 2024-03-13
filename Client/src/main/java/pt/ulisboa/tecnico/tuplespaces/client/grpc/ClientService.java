@@ -184,8 +184,8 @@ public class ClientService {
 
                 List<List<String>> takePhase1Tuples = collector.getTakePhase1Tuples();
 
-                // count number of rejections (null responses)
-                int numRejections = (int) takePhase1Tuples.stream().filter(t -> t == null).count();
+                // count number of rejections (empty lists)
+                int numRejections = (int) takePhase1Tuples.stream().filter(List::isEmpty).count();
 
                 if (numRejections == 0) {
                     // received confirmation from all servers

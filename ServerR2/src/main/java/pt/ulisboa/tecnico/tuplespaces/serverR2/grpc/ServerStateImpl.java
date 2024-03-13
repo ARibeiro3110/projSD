@@ -79,7 +79,7 @@ public class ServerStateImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaIm
             return;
         }
 
-        // acquire locks on matching tuples
+        // acquire locks on available matching tuples
         List<String> reservedTuples = serverState.takePhase1(searchPattern, clientId);
         debug("Reserved tuples:\n"+ reservedTuples == null ? "null" : reservedTuples.toString());
 
@@ -90,28 +90,45 @@ public class ServerStateImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaIm
         responseObserver.onCompleted();
     }
 
-    //@Override
-    //public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
-        // String searchPattern = request.getSearchPattern();
+    @Override
+    // takePhase1Release
+    public void takePhase1Release(TakePhase1ReleaseRequest request, StreamObserver<TakePhase1ReleaseResponse> responseObserver) {
+        int clientId = request.getClientId();
 
-        // // validate search pattern
-        // if (!serverState.isValidInput(searchPattern)) {
-        //     responseObserver.onError(INVALID_ARGUMENT
-        //             .withDescription("Invalid search pattern format.")
-        //             .asRuntimeException());
-        //     return;
-        // }
+        // release locks on all reserved tuples
+        serverState.takePhase1Release(clientId);
+        debug("Locks released for client " + clientId + ".");
 
-        // // read tuple value
-        // String result = serverState.take(searchPattern);
-        // debug("Tuple " + result + " taken from the tuple space.");
+        // send a single response through the stream
+        responseObserver.onNext(TakePhase1ReleaseResponse.newBuilder().build());
 
-        // // send a single response through the stream
-        // responseObserver.onNext(TakeResponse.newBuilder().setResult(result).build());
+        // notify the client that the operation has been completed.
+        responseObserver.onCompleted();
+    }
 
-        // // notify the client that the operation has been completed.
-        // responseObserver.onCompleted();
-    //}
+    @Override
+    // takePhase2
+    public void takePhase2(TakePhase2Request request, StreamObserver<TakePhase2Response> responseObserver) {
+        String tuple = request.getTuple();
+        int clientId = request.getClientId();
+
+        // validate tuple
+        if (!serverState.isValidInput(tuple)) {
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription("Invalid tuple format.")
+                    .asRuntimeException());
+            return;
+        }
+
+        // remove tuple from the tuple space
+        serverState.takePhase2(tuple, clientId);
+
+        // send a single response through the stream
+        responseObserver.onNext(TakePhase2Response.newBuilder().build());
+
+        // notify the client that the operation has been completed.
+        responseObserver.onCompleted();
+    }
 
     @Override
     public void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {

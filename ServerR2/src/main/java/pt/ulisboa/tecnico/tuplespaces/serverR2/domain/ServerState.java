@@ -48,6 +48,7 @@ public class ServerState {
         public void unlock() {
             this.mutex.unlock();
             setLocked(false);
+            setClientId(0);
         }
     }
 
@@ -99,31 +100,50 @@ public class ServerState {
     public synchronized List<String> takePhase1(String pattern, int clientId) {
         List<ServerEntry> matchingEntries;
 
-        // wait until a tuple matching the pattern is available
-        while ((matchingEntries = getAllMatchingEntries(pattern)).isEmpty()) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                System.out.println("Error: " + e.getMessage());
-            }
+        if ((matchingEntries = getAllMatchingEntries(pattern)).isEmpty()) {
+            // if no matching tuples are found, return empty list
+            return new ArrayList<String>();
         }
 
         List<String> tuples = new ArrayList<String>();
 
-        // check if all matching tuples are unlocked
         for (ServerEntry entry : matchingEntries) {
-            if (entry.isLocked() && entry.getClientId() != clientId)
-                return null;
+            if (!entry.isLocked()) {
+                entry.lock();
+                entry.setClientId(clientId);
+                tuples.add(entry.getTuple());
+            }
         }
 
-        // lock all matching tuples
-        for (ServerEntry entry : matchingEntries) {
-            entry.lock();
-            entry.setClientId(clientId);
-            tuples.add(entry.getTuple());
+        if (tuples.isEmpty()) {
+            // if all matching tuples are locked, return empty list
+            return new ArrayList<String>();
         }
 
         return tuples;
+    }
+
+    public synchronized void takePhase1Release(int clientId) {
+        releaseAllLocks(clientId);
+    }
+
+    public synchronized void takePhase2(String tuple, int clientId) {
+        for (ServerEntry entry : this.entries) {
+            if (entry.getTuple().equals(tuple) && entry.getClientId() == clientId) {
+                // remove tuple from the tuple space
+                this.entries.remove(entry);
+                break; // remove only first occurrence
+            }
+        }
+        releaseAllLocks(clientId);
+    }
+
+    public synchronized void releaseAllLocks(int clientId) {
+        for (ServerEntry entry : this.entries) {
+            if (entry.getClientId() == clientId) {
+                entry.unlock();
+            }
+        }
     }
 
     public synchronized List<String> getTupleSpacesState() {
