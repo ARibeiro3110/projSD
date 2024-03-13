@@ -108,7 +108,7 @@ public class ServerState {
         List<String> tuples = new ArrayList<String>();
 
         for (ServerEntry entry : matchingEntries) {
-            if (!entry.isLocked()) {
+            if (!entry.isLocked() || clientId == entry.getClientId()) {
                 entry.lock();
                 entry.setClientId(clientId);
                 tuples.add(entry.getTuple());

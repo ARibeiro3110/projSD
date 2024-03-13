@@ -169,10 +169,12 @@ public class ClientService {
     public void takePhase1(String searchPattern) {
         try {
             debug("Sending take request (phase 1) with search pattern " + searchPattern + "...");
-
-            while (true) {
+            boolean takePhase1Success = false;
+            List<String> intersection = new ArrayList<String>();
+            while (!takePhase1Success) {
                 for (int i = 0; i < numServers; i++) {
-                    TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(searchPattern).setClientId(clientId).build();
+                    TakePhase1Request request = TakePhase1Request.newBuilder().
+                                                setSearchPattern(searchPattern).setClientId(clientId).build();
                     tupleSpacesStubs.get(i).takePhase1(request, new ClientObserver<TakePhase1Response>(collector));
                 }
 
@@ -183,84 +185,58 @@ public class ClientService {
                 }
 
                 List<List<String>> takePhase1Tuples = collector.getTakePhase1Tuples();
+                
+                int backOffTime = 1000; // TODO: decide on backoff time
 
                 // count number of rejections (empty lists)
                 int numRejections = (int) takePhase1Tuples.stream().filter(List::isEmpty).count();
 
-                if (numRejections == 0) {
-                    // received confirmation from all servers
-                    List<String> intersection = intersection(takePhase1Tuples);
-                    if (!intersection.isEmpty()) {
-                        // end of phase 1, send take phase 2 request
-                        takePhase2(intersection.get(0), clientId);
-                        break;
-
-                    } else {
-                        // no intersection, backoff
-                        try {
-                            Thread.sleep(1000); // TODO: decide on backoff time
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                switch (numRejections) {
+                    case 0:
+                        // received confirmation from all servers
+                        intersection = intersection(takePhase1Tuples);
+                        if (!intersection.isEmpty()) {
+                            // end of phase 1, send take phase 2 request
+                            takePhase1Success = true;
                         }
-
+                        break;
+                    case 1:
+                        // a majority of servers accepted the request
+                        // backoff and resend take phase 1 request
+                        break;
+                    case 2:
+                        // only a minority of servers accepted the request
+                        // send take phase 1 release request
+                        takePhase1Release(clientId);
+                        break;
+                    case 3:
+                        // rejected by all servers
                         // resend take phase 1 request
-                        continue;
-                    }
+                        backOffTime = new Random().nextInt(5000); // TODO: decide on backoff time
+                        break;
+                    default:
+                        System.out.println("Error: unexpected number of rejections");
+                        break;
                 }
 
-                else if (numRejections == 1) {
-                    // a majority of servers accepted the request
+                if (!takePhase1Success) {
                     // backoff and resend take phase 1 request
                     try {
-                        Thread.sleep(1000); // TODO: decide on backoff time
+                        Thread.sleep(backOffTime);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        System.out.println("Caught exception: " + e.getMessage());
                     }
-
-                    // resend take phase 1 request
-                    continue;
                 }
-
-                else if (numRejections == 2) {
-                    // only a minority of servers accepted the request
-                    // send take phase 1 release request
-                    takePhase1Release(clientId);
-
-                    // backoff
-                    try {
-                        Thread.sleep(1000); // TODO: decide on backoff time
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    // resend take phase 1 request
-                    continue;
-                }
-
-                else if (numRejections == 3) {
-                    // rejected by all servers
-                    // resend take phase 1 request
-                    Random random = new Random();
-                    try {
-                        Thread.sleep(random.nextInt(5000)); // TODO: decide on backoff time
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    // resend take phase 1 request
-                    continue;
-                }
-
-                else {
-                    System.out.println("Error: unexpected number of rejections");;
-                }
-
+                
             }
+
+            takePhase2(intersection.get(0), clientId);
 
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());
         }
+    
     }
 
     public void takePhase1Release(int clientId) {

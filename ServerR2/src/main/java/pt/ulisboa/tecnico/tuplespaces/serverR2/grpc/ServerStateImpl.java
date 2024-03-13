@@ -81,7 +81,7 @@ public class ServerStateImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaIm
 
         // acquire locks on available matching tuples
         List<String> reservedTuples = serverState.takePhase1(searchPattern, clientId);
-        debug("Reserved tuples:\n"+ reservedTuples == null ? "null" : reservedTuples.toString());
+        debug("Reserved tuples:\n"+ reservedTuples.toString());
 
         // send a single response through the stream
         responseObserver.onNext(TakePhase1Response.newBuilder().addAllReservedTuples(reservedTuples).build());

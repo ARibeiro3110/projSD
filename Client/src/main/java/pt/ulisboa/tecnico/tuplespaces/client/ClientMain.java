@@ -9,6 +9,7 @@ public class ClientMain {
         // check arguments
         if (args.length != 1) {
             // must receive client id
+            System.err.println("Argument(s) missing!");
             System.err.println("Usage: mvn exec:java -Dexec.args=\\\"<client_id>\\\"");
             return;
         }
