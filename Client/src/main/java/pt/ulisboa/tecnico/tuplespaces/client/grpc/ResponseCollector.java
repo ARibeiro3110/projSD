@@ -6,8 +6,9 @@ import java.util.List;
 public class ResponseCollector {
     private int numServers;
     private int putResponses;
-    private String readTuple;
+    public String readTuple;
     private List<String> tupleSpacesState;
+    private boolean expectingRead;
 
     private List<List<String>> takePhase1Tuples;
     private int takeReleaseResponses;
@@ -19,7 +20,8 @@ public class ResponseCollector {
         takeReleaseResponses = 0;
         takePhase1Tuples = new ArrayList<List<String>>();
         takePhase2Responses = 0;
-        tupleSpacesState = new ArrayList<String>();
+        tupleSpacesState = null;
+        expectingRead = false;
 
         this.numServers = numServers;
     }
@@ -46,11 +48,15 @@ public class ResponseCollector {
     }
 
     synchronized public void addTuple(String tuple) {
-        readTuple = tuple;
+        if (expectingRead) {
+            readTuple = tuple;
+            expectingRead = false;
+        }
         notifyAll();
     }
 
     synchronized public void waitForReadResponse() throws InterruptedException {
+        expectingRead = true;
         while (readTuple.equals("")){ 
             try{
                 wait();
@@ -62,7 +68,7 @@ public class ResponseCollector {
 
     synchronized public List<String> getTupleSpacesStateResponse() {
         List<String> temp = tupleSpacesState;
-        tupleSpacesState = new ArrayList<String>();
+        tupleSpacesState = null;
         return temp;
     }
 
@@ -72,7 +78,7 @@ public class ResponseCollector {
     }
 
     synchronized public void waitForTupleSpacesStateResponse() throws InterruptedException {
-        while (tupleSpacesState.isEmpty()) 
+        while (tupleSpacesState == null) 
             try {
                 wait();
             } catch (InterruptedException e) {
@@ -98,7 +104,7 @@ public class ResponseCollector {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        takePhase1Tuples.clear();
+            // TODO: between wait and get, takePhase1Tuples is not reset, could that be a problem?
     }
 
     synchronized public void incrementTakeReleaseResponses() {

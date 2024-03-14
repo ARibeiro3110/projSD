@@ -152,14 +152,12 @@ public class ClientService {
                 tupleSpacesStubs.get(i).read(request, new ClientObserver<ReadResponse>(collector));
             }
 
-             try {
+            try {
                 collector.waitForReadResponse();
             } catch (InterruptedException e) {
                 System.out.println("Caught exception: " + e.getMessage());
             }
-
             System.out.println("OK\n" + collector.getReadTuple() + "\n");
-
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());
@@ -185,9 +183,9 @@ public class ClientService {
                 }
 
                 List<List<String>> takePhase1Tuples = collector.getTakePhase1Tuples();
-                
+                System.out.println("Received take phase 1 tuples: " + takePhase1Tuples); //TODO: remove print
                 int backOffTime = 1000; // TODO: decide on backoff time
-
+                
                 // count number of rejections (empty lists)
                 int numRejections = (int) takePhase1Tuples.stream().filter(List::isEmpty).count();
 
@@ -282,15 +280,14 @@ public class ClientService {
         }
     }
 
-    public List<String> intersection(List<List<String>> lists){
-        if (lists.size() == 1) // only one list
-            return new ArrayList<String>(); // TODO: what should we return here?
+    public List<String> intersection(List<List<String>> lists) throws IllegalArgumentException {
+        if (lists.size() <= 1) // not enough lists to compare
+            throw new IllegalArgumentException("Error: not enough lists to compare"); // TODO: what should we do here
 
         List<String> intersection = new ArrayList<String>(lists.get(0));
         for (int i = 1; i < lists.size(); i++) {
             intersection.retainAll(lists.get(i));
         }
-
         return intersection;
     }
 
