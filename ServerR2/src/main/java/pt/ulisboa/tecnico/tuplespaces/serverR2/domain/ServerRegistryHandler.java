@@ -2,18 +2,19 @@ package pt.ulisboa.tecnico.tuplespaces.serverR2.domain;
 
 import pt.ulisboa.tecnico.tuplespaces.serverR2.grpc.ClientService;
 
-public class ServerUtils {
+public class ServerRegistryHandler {
 
     private ClientService clientService;
-    private static final String name = "TupleSpaces";
+    private String name;
     private String target;
     private String qualifier;
 
-    public ServerUtils(ClientService clientService, String target, String qualifier) {
+    public ServerRegistryHandler(ClientService clientService, String target, String qualifier, String name) {
         this.clientService = clientService;
         this.target = target;
         this.qualifier = qualifier;
-
+        this.name = name;
+        
     }
 
     public void registerServer() {

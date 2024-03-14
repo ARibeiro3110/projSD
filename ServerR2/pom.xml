@@ -23,6 +23,7 @@
 		<mainclass>pt.ulisboa.tecnico.tuplespaces.serverR2.ServerMain</mainclass>
 		<server.port>8000</server.port>
 		<server.qual>A</server.qual>
+		<server.name>TupleSpace</server.name>
 
 	</properties>
 
@@ -65,6 +66,7 @@
 					<arguments>
 						<argument>${server.port}</argument>
 						<argument>${server.qual}</argument>
+						<argument>${server.name}</argument>
 					</arguments>
 				</configuration>
 			</plugin>

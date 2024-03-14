@@ -4,7 +4,7 @@ import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-import pt.ulisboa.tecnico.tuplespaces.serverR2.domain.ServerUtils;
+import pt.ulisboa.tecnico.tuplespaces.serverR2.domain.ServerRegistryHandler;
 import pt.ulisboa.tecnico.tuplespaces.serverR2.grpc.ClientService;
 import pt.ulisboa.tecnico.tuplespaces.serverR2.grpc.ServerStateImpl;
 
@@ -42,8 +42,9 @@ public class ServerMain {
         final int port = Integer.parseInt(args[0]);
         final String qualifier = args[1];
         final String target = "localhost:" + port;
+        final String name = args.length == 3 ? args[2] : "TupleSpace"; // default service name
         final BindableService service = new ServerStateImpl();
-        final ServerUtils serverUtils = new ServerUtils(new ClientService(), target, qualifier);
+        final ServerRegistryHandler serverRegistryHandler = new ServerRegistryHandler(new ClientService(), target, qualifier, name);
 
         // create a new server to listen on port
         Server server = ServerBuilder.forPort(port).addService(service).build();
@@ -56,14 +57,14 @@ public class ServerMain {
 
         // register server
         debug("Registering server...");
-        serverUtils.registerServer();
+        serverRegistryHandler.registerServer();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             debug("\nShutting down server...");
             server.shutdown();
             debug("Unregistering server...");
-            serverUtils.unregisterServer();
-            serverUtils.shutdown();
+            serverRegistryHandler.unregisterServer();
+            serverRegistryHandler.shutdown();
             debug("Server shut down.");
         }));
 

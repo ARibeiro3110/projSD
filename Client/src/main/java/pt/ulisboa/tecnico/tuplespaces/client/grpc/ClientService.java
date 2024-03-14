@@ -56,13 +56,6 @@ public class ClientService {
     /* This method allows the command processor to set the request delay assigned to a given server */
     public void setDelay(int id, int delay) {
         delayer.setDelay(id, delay);
-
-        /* TODO: Remove this debug snippet */
-        System.out.println("[Debug only]: After setting the delay, I'll test it");
-        for (Integer i : delayer) {
-          System.out.println("[Debug only]: Now I can send request to stub[" + i + "]");
-      }
-      System.out.println("[Debug only]: Done.");
     }
 
     private NameServerGrpc.NameServerBlockingStub createNameServerBlockingStub() {
@@ -105,7 +98,7 @@ public class ClientService {
             if (tupleSpacesStubs.size() == numServers)
                 break;
 
-            List<String> targets = lookup("TupleSpaces", qualifier);
+            List<String> targets = lookup("TupleSpace", qualifier);
 
             while (targets == null || targets.isEmpty()) {
                 try {
@@ -125,7 +118,7 @@ public class ClientService {
         try {
             debug("Sending put request with tuple " + tuple + "...");
 
-            for (int i = 0; i < numServers; i++) {
+            for (Integer i : delayer) {
                 PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).build();
                 tupleSpacesStubs.get(i).put(request, new ClientObserver<PutResponse>(collector));
             }
@@ -147,7 +140,7 @@ public class ClientService {
         try {
             debug("Sending read request with search pattern " + searchPattern + "...");
 
-            for (int i = 0; i < numServers; i++) {
+            for (Integer i : delayer) {
                 ReadRequest request = ReadRequest.newBuilder().setSearchPattern(searchPattern).build();
                 tupleSpacesStubs.get(i).read(request, new ClientObserver<ReadResponse>(collector));
             }
@@ -170,7 +163,7 @@ public class ClientService {
             boolean takePhase1Success = false;
             List<String> intersection = new ArrayList<String>();
             while (!takePhase1Success) {
-                for (int i = 0; i < numServers; i++) {
+                for (Integer i : delayer) {
                     TakePhase1Request request = TakePhase1Request.newBuilder().
                                                 setSearchPattern(searchPattern).setClientId(clientId).build();
                     tupleSpacesStubs.get(i).takePhase1(request, new ClientObserver<TakePhase1Response>(collector));
@@ -183,7 +176,6 @@ public class ClientService {
                 }
 
                 List<List<String>> takePhase1Tuples = collector.getTakePhase1Tuples();
-                System.out.println("Received take phase 1 tuples: " + takePhase1Tuples); //TODO: remove print
                 int backOffTime = 1000; // TODO: decide on backoff time
                 
                 // count number of rejections (empty lists)
@@ -210,7 +202,7 @@ public class ClientService {
                     case 3:
                         // rejected by all servers
                         // resend take phase 1 request
-                        backOffTime = new Random().nextInt(5000); // TODO: decide on backoff time
+                        backOffTime = new Random().nextInt(5000); // TODO: decide on backoff time and turn into constant
                         break;
                     default:
                         System.out.println("Error: unexpected number of rejections");
@@ -228,7 +220,8 @@ public class ClientService {
                 
             }
 
-            takePhase2(intersection.get(0), clientId);
+            String randomTuple = intersection.get(new Random().nextInt(intersection.size()));
+            takePhase2(randomTuple, clientId);
 
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
@@ -241,7 +234,7 @@ public class ClientService {
         try {
             debug("Sending take phase 1 release request with client id " + clientId + "...");
 
-            for (int i = 0; i < numServers; i++) {
+            for (Integer i : delayer) {
                 TakePhase1ReleaseRequest request = TakePhase1ReleaseRequest.newBuilder().setClientId(clientId).build();
                 tupleSpacesStubs.get(i).takePhase1Release(request, new ClientObserver<TakePhase1ReleaseResponse>(collector));
             }
@@ -262,14 +255,14 @@ public class ClientService {
         try {
             debug("Sending take request (phase 2) with tuple " + tuple + " and client id " + clientId + "...");
 
-            for (int i = 0; i < numServers; i++) {
+            for (Integer i : delayer) {
                 TakePhase2Request request = TakePhase2Request.newBuilder().setTuple(tuple).setClientId(clientId).build();
                 tupleSpacesStubs.get(i).takePhase2(request, new ClientObserver<TakePhase2Response>(collector));
             }
 
             try {
                 collector.waitForTakePhase2Response(); // TODO: resend remove request if not all servers respond (step 3)
-                                                       // TODO: when does this happen?
+                                                       // TODO: when does this happen? add timeout and if it expires resend remove request?
             } catch (InterruptedException e) {
                 System.out.println("Caught exception: " + e.getMessage());
             }
@@ -278,6 +271,8 @@ public class ClientService {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());
         }
+
+        System.out.println("OK\n" + tuple + "\n");
     }
 
     public List<String> intersection(List<List<String>> lists) throws IllegalArgumentException {

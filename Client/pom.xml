@@ -21,6 +21,7 @@
 		<version.exec-maven-plugin>3.0.0</version.exec-maven-plugin>
 
 		<mainclass>pt.ulisboa.tecnico.tuplespaces.client.ClientMain</mainclass>
+		<client.id>1</client.id>
 	</properties>
 
 	<!-- Dependencies are code archives - JARs - 
@@ -65,6 +66,9 @@
 				</executions>
 				<configuration>
 					<mainClass>${mainclass}</mainClass>
+					<arguments>
+						<argument>${client.id}</argument>
+					</arguments>
 				</configuration>
 			</plugin>
 		</plugins>
