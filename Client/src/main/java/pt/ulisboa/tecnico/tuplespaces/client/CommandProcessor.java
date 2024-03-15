@@ -121,8 +121,10 @@ public class CommandProcessor {
 
         // get the qualifier
         int qualifier = indexOfServerQualifier(split[1]);
-        if (qualifier == -1)
+        if (qualifier == -1) {
             System.out.println("Invalid server qualifier");
+            return;
+        }
 
         // get the tuple spaces state
         clientService.getTupleSpacesState(qualifier);

@@ -23,6 +23,10 @@ public class ClientService {
      * The flag can be set using the -Ddebug command line option. */
 
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
+    private static final String SERVICE = "TupleSpace";
+    private static final int BACKOFF_DEFAULT = 1000; // 1 second
+    private static final int BACKOFF_ALL_REJECTIONS = 2000; // 2 seconds
+
     private NameServerGrpc.NameServerBlockingStub nameServerStub;
     private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub> tupleSpacesStubs;
     private List<ManagedChannel> channels;
@@ -98,7 +102,7 @@ public class ClientService {
             if (tupleSpacesStubs.size() == numServers)
                 break;
 
-            List<String> targets = lookup("TupleSpace", qualifier);
+            List<String> targets = lookup(SERVICE, qualifier);
 
             while (targets == null || targets.isEmpty()) {
                 try {
@@ -107,7 +111,7 @@ public class ClientService {
                 } catch (InterruptedException e) {
                     System.out.println("Caught exception: " + e.getMessage());
                 }
-                targets = lookup("TupleSpaces", qualifier);
+                targets = lookup(SERVICE, qualifier);
             }
 
             createTupleSpacesStub(targets.get(0));
@@ -162,6 +166,9 @@ public class ClientService {
             debug("Sending take request (phase 1) with search pattern " + searchPattern + "...");
             boolean takePhase1Success = false;
             List<String> intersection = new ArrayList<String>();
+            List<List<String>> takePhase1Tuples = new ArrayList<List<String>>();
+            int backOffTime;
+            int num_attempts = 0;
             while (!takePhase1Success) {
                 for (Integer i : delayer) {
                     TakePhase1Request request = TakePhase1Request.newBuilder().
@@ -175,9 +182,9 @@ public class ClientService {
                     System.out.println("Caught exception: " + e.getMessage());
                 }
 
-                List<List<String>> takePhase1Tuples = collector.getTakePhase1Tuples();
-                int backOffTime = 1000; // TODO: decide on backoff time
-                
+                takePhase1Tuples = collector.getTakePhase1Tuples();
+                backOffTime = BACKOFF_DEFAULT;
+
                 // count number of rejections (empty lists)
                 int numRejections = (int) takePhase1Tuples.stream().filter(List::isEmpty).count();
 
@@ -197,12 +204,15 @@ public class ClientService {
                     case 2:
                         // only a minority of servers accepted the request
                         // send take phase 1 release request
+                        num_attempts++;
                         takePhase1Release(clientId);
+                        // backoff increases expontentially with number of attempts
+                        backOffTime = new Random().nextInt(BACKOFF_DEFAULT * (int) Math.pow(2, num_attempts));
                         break;
                     case 3:
                         // rejected by all servers
                         // resend take phase 1 request
-                        backOffTime = new Random().nextInt(5000); // TODO: decide on backoff time and turn into constant
+                        backOffTime = BACKOFF_ALL_REJECTIONS;
                         break;
                     default:
                         System.out.println("Error: unexpected number of rejections");
@@ -217,7 +227,7 @@ public class ClientService {
                         System.out.println("Caught exception: " + e.getMessage());
                     }
                 }
-                
+
             }
 
             String randomTuple = intersection.get(new Random().nextInt(intersection.size()));
@@ -227,7 +237,7 @@ public class ClientService {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());
         }
-    
+
     }
 
     public void takePhase1Release(int clientId) {
@@ -261,8 +271,7 @@ public class ClientService {
             }
 
             try {
-                collector.waitForTakePhase2Response(); // TODO: resend remove request if not all servers respond (step 3)
-                                                       // TODO: when does this happen? add timeout and if it expires resend remove request?
+                collector.waitForTakePhase2Response();
             } catch (InterruptedException e) {
                 System.out.println("Caught exception: " + e.getMessage());
             }
@@ -276,9 +285,6 @@ public class ClientService {
     }
 
     public List<String> intersection(List<List<String>> lists) throws IllegalArgumentException {
-        if (lists.size() <= 1) // not enough lists to compare
-            throw new IllegalArgumentException("Error: not enough lists to compare"); // TODO: what should we do here
-
         List<String> intersection = new ArrayList<String>(lists.get(0));
         for (int i = 1; i < lists.size(); i++) {
             intersection.retainAll(lists.get(i));
@@ -312,7 +318,7 @@ public class ClientService {
     public void shutdown() {
         // Shutdown channel before stopping the process
         debug("Shutting down channel...");
-        for (ManagedChannel channel : channels)  
+        for (ManagedChannel channel : channels)
             channel.shutdownNow();
     }
 

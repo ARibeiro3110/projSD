@@ -66,7 +66,7 @@ public class ServerState {
     public boolean isValidInput(String input) {
         if (!input.substring(0,1).equals(BGN_TUPLE)
             ||
-            !input.endsWith(END_TUPLE)) 
+            !input.endsWith(END_TUPLE))
             {
             return false;
         }

@@ -16,7 +16,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<version.java>11</version.java>
-		
+
 		<version.maven-enforcer-plugin>1.4.1</version.maven-enforcer-plugin>
 		<version.protobuf-maven-plugin>0.6.1</version.protobuf-maven-plugin>
 		<version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>

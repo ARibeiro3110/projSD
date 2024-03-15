@@ -41,7 +41,7 @@ public class ResponseCollector {
         lock.lock();
         try {
             putResponses++;
-            putResponseCondition.signalAll();
+            putResponseCondition.signal();
         } finally {
             lock.unlock();
         }
@@ -76,7 +76,7 @@ public class ResponseCollector {
             if (expectingRead) {
                 readTuple = tuple;
                 expectingRead = false;
-                readResponseCondition.signalAll(); 
+                readResponseCondition.signal();
             }
         } finally {
             lock.unlock();
@@ -110,7 +110,7 @@ public class ResponseCollector {
         lock.lock();
         try {
             tupleSpacesState = new ArrayList<>(tuples);
-            tupleSpacesStateCondition.signalAll();
+            tupleSpacesStateCondition.signal();
         } finally {
             lock.unlock();
         }
@@ -143,7 +143,7 @@ public class ResponseCollector {
         lock.lock();
         try {
             takePhase1Tuples.add(tuples);
-            takePhase1Condition.signalAll();
+            takePhase1Condition.signal();
         } finally {
             lock.unlock();
         }
@@ -151,6 +151,7 @@ public class ResponseCollector {
 
     public void waitForTakePhase1Response() throws InterruptedException {
         lock.lock();
+        
         try {
             while (takePhase1Tuples.size() < numServers) {
                 takePhase1Condition.await();
@@ -158,14 +159,13 @@ public class ResponseCollector {
         } finally {
             lock.unlock();
         }
-        // TODO: between wait and get, takePhase1Tuples is not reset, could that be a problem?
     }
 
     public void incrementTakeReleaseResponses() {
         lock.lock();
         try {
             takeReleaseResponses++;
-            takeReleaseCondition.signalAll();
+            takeReleaseCondition.signal();
         } finally {
             lock.unlock();
         }
@@ -187,7 +187,7 @@ public class ResponseCollector {
         lock.lock();
         try {
             takePhase2Responses++;
-            takePhase2Condition.signalAll();
+            takePhase2Condition.signal();
         } finally {
             lock.unlock();
         }

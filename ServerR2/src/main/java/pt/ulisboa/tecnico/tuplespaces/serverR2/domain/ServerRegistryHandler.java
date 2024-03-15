@@ -14,7 +14,7 @@ public class ServerRegistryHandler {
         this.target = target;
         this.qualifier = qualifier;
         this.name = name;
-        
+
     }
 
     public void registerServer() {
