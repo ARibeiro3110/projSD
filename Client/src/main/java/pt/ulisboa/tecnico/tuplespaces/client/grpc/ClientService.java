@@ -294,9 +294,14 @@ public class ClientService {
 
     public void getTupleSpacesState(int qualifier) {
         try {
-            tupleSpacesStubs.get(qualifier).getTupleSpacesState(
-                    getTupleSpacesStateRequest.getDefaultInstance(),
-                    new ClientObserver<getTupleSpacesStateResponse>(collector));
+            for (Integer i : delayer) {
+                if (i == qualifier){
+                    tupleSpacesStubs.get(qualifier).getTupleSpacesState(
+                        getTupleSpacesStateRequest.getDefaultInstance(),
+                        new ClientObserver<getTupleSpacesStateResponse>(collector));
+                    break;
+                }
+            }
 
             try {
                 collector.waitForTupleSpacesStateResponse();
