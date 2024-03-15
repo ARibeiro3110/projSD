@@ -122,7 +122,6 @@ public class ResponseCollector {
             while (tupleSpacesState == null) {
                 tupleSpacesStateCondition.await();
             }
-            System.out.println(tupleSpacesState);
         } finally {
             lock.unlock();
         }
@@ -151,7 +150,7 @@ public class ResponseCollector {
 
     public void waitForTakePhase1Response() throws InterruptedException {
         lock.lock();
-        
+
         try {
             while (takePhase1Tuples.size() < numServers) {
                 takePhase1Condition.await();
