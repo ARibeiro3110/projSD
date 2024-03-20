@@ -2,15 +2,17 @@ package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.*;
+import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaGrpc;
+import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaTotalOrder.*;
 import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.LookupRequest;
 import pt.ulisboa.tecnico.nameserver.contract.NameServerOuterClass.LookupResponse;
+import pt.ulisboa.tecnico.sequencer.contract.SequencerGrpc;
+import pt.ulisboa.tecnico.sequencer.contract.SequencerOuterClass.GetSeqNumberRequest;
+import pt.ulisboa.tecnico.sequencer.contract.SequencerOuterClass.GetSeqNumberResponse;
 import pt.ulisboa.tecnico.nameserver.contract.NameServerGrpc;
 import pt.ulisboa.tecnico.tuplespaces.client.util.OrderedDelayer;
 
@@ -18,21 +20,20 @@ public class ClientService {
 
     /** Default host and port for the name server. */
     private static final String NAME_SERVER_TARGET = "localhost:5001";
+    private static final String SEQUENCER_TARGET = "localhost:5002";
 
     /** Set flag to true to print debug messages.
      * The flag can be set using the -Ddebug command line option. */
 
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
     private static final String SERVICE = "TupleSpace";
-    private static final int BACKOFF_DEFAULT = 1000; // 1 second
-    private static final int BACKOFF_ALL_REJECTIONS = 2000; // 2 seconds
 
     private NameServerGrpc.NameServerBlockingStub nameServerStub;
+    private SequencerGrpc.SequencerBlockingStub sequencerStub;
     private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub> tupleSpacesStubs;
     private List<ManagedChannel> channels;
     private OrderedDelayer delayer;
     private int numServers;
-    private int clientId;
     private ResponseCollector collector;
 
     /** Helper method to print debug messages. */
@@ -43,7 +44,6 @@ public class ClientService {
 
     public ClientService(int numServers, int clientId) {
         this.numServers = numServers;
-        this.clientId = clientId;
 
         delayer = new OrderedDelayer(numServers);
         collector = new ResponseCollector(numServers);
@@ -52,6 +52,7 @@ public class ClientService {
         tupleSpacesStubs = new ArrayList<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub>();
 
         this.nameServerStub = createNameServerBlockingStub(); // create blocking stub for name server
+        this.sequencerStub = createSequencerBlockingStub(); // create blocking stub for sequencer
 
         debug("Looking for servers...");
         findServers();
@@ -66,6 +67,12 @@ public class ClientService {
         debug("Creating NameServerBlockingStub for target " + NAME_SERVER_TARGET + "...");
         ManagedChannel channel = ManagedChannelBuilder.forTarget(NAME_SERVER_TARGET).usePlaintext().build();
         return NameServerGrpc.newBlockingStub(channel);
+    }
+
+    private SequencerGrpc.SequencerBlockingStub createSequencerBlockingStub() {
+        debug("Creating SequencerBlockingStub for target " + SEQUENCER_TARGET + "...");
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(SEQUENCER_TARGET).usePlaintext().build();
+        return SequencerGrpc.newBlockingStub(channel);
     }
 
     private void createTupleSpacesStub(String target) {
@@ -120,10 +127,17 @@ public class ClientService {
 
     public void put(String tuple) {
         try {
+            debug("Sending sequence number request to sequencer...");
+            
+            GetSeqNumberRequest seqRequest = GetSeqNumberRequest.newBuilder().build();
+            GetSeqNumberResponse seqResponse = sequencerStub.getSeqNumber(seqRequest);
+
+            int seqNumber = seqResponse.getSeqNumber();
+
             debug("Sending put request with tuple " + tuple + "...");
 
             for (Integer i : delayer) {
-                PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).build();
+                PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).setSeqNumber(seqNumber).build();
                 tupleSpacesStubs.get(i).put(request, new ClientObserver<PutResponse>(collector));
             }
 
@@ -161,137 +175,23 @@ public class ClientService {
         }
     }
 
-    public void takePhase1(String searchPattern) {
+    public void take(String searchPattern) {
         try {
-            debug("Sending take request (phase 1) with search pattern " + searchPattern + "...");
-            boolean takePhase1Success = false;
-            List<String> intersection = new ArrayList<String>();
-            List<List<String>> takePhase1Tuples = new ArrayList<List<String>>();
-            int backOffTime;
-            int num_attempts = 0;
-            while (!takePhase1Success) {
-                for (Integer i : delayer) {
-                    TakePhase1Request request = TakePhase1Request.newBuilder().
-                                                setSearchPattern(searchPattern).setClientId(clientId).build();
-                    tupleSpacesStubs.get(i).takePhase1(request, new ClientObserver<TakePhase1Response>(collector));
-                }
+            debug("Sending sequence number request to sequencer...");
+            
+            GetSeqNumberRequest seqRequest = GetSeqNumberRequest.newBuilder().build();
+            GetSeqNumberResponse seqResponse = sequencerStub.getSeqNumber(seqRequest);
 
-                try {
-                    collector.waitForTakePhase1Response();
-                } catch (InterruptedException e) {
-                    System.out.println("Caught exception: " + e.getMessage());
-                }
+            int seqNumber = seqResponse.getSeqNumber();
 
-                takePhase1Tuples = collector.getTakePhase1Tuples();
-                backOffTime = BACKOFF_DEFAULT;
-
-                // count number of rejections (empty lists)
-                int numRejections = (int) takePhase1Tuples.stream().filter(List::isEmpty).count();
-
-                switch (numRejections) {
-                    case 0:
-                        // received confirmation from all servers
-                        intersection = intersection(takePhase1Tuples);
-                        if (!intersection.isEmpty()) {
-                            // end of phase 1, send take phase 2 request
-                            takePhase1Success = true;
-                        }
-                        break;
-                    case 1:
-                        // a majority of servers accepted the request
-                        // backoff and resend take phase 1 request
-                        break;
-                    case 2:
-                        // only a minority of servers accepted the request
-                        // send take phase 1 release request
-                        num_attempts++;
-                        takePhase1Release(clientId);
-                        // backoff increases expontentially with number of attempts
-                        backOffTime = new Random().nextInt(BACKOFF_DEFAULT * (int) Math.pow(2, num_attempts));
-                        break;
-                    case 3:
-                        // rejected by all servers
-                        // resend take phase 1 request
-                        backOffTime = BACKOFF_ALL_REJECTIONS;
-                        break;
-                    default:
-                        System.out.println("Error: unexpected number of rejections");
-                        break;
-                }
-
-                if (!takePhase1Success) {
-                    // backoff and resend take phase 1 request
-                    try {
-                        Thread.sleep(backOffTime);
-                    } catch (InterruptedException e) {
-                        System.out.println("Caught exception: " + e.getMessage());
-                    }
-                }
-
-            }
-
-            String randomTuple = intersection.get(new Random().nextInt(intersection.size()));
-            takePhase2(randomTuple, clientId);
-
-        } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " +
-            e.getStatus().getDescription());
-        }
-
-    }
-
-    public void takePhase1Release(int clientId) {
-        try {
-            debug("Sending take phase 1 release request with client id " + clientId + "...");
-
-            for (Integer i : delayer) {
-                TakePhase1ReleaseRequest request = TakePhase1ReleaseRequest.newBuilder().setClientId(clientId).build();
-                tupleSpacesStubs.get(i).takePhase1Release(request, new ClientObserver<TakePhase1ReleaseResponse>(collector));
-            }
-
-            try {
-                collector.waitForTakeReleaseResponse();
-            } catch (InterruptedException e) {
-                System.out.println("Caught exception: " + e.getMessage());
-            }
-
+            debug("Sending take request with search pattern " + searchPattern + "...");
+            TakeResponse result = tupleSpacesStub.take(TakeRequest.newBuilder().setSearchPattern(searchPattern).build());
+            System.out.println("OK\n" + result.getResult() + "\n");
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());
         }
     }
-
-    public void takePhase2(String tuple, int clientId) {
-        try {
-            debug("Sending take request (phase 2) with tuple " + tuple + " and client id " + clientId + "...");
-
-            for (Integer i : delayer) {
-                TakePhase2Request request = TakePhase2Request.newBuilder().setTuple(tuple).setClientId(clientId).build();
-                tupleSpacesStubs.get(i).takePhase2(request, new ClientObserver<TakePhase2Response>(collector));
-            }
-
-            try {
-                collector.waitForTakePhase2Response();
-            } catch (InterruptedException e) {
-                System.out.println("Caught exception: " + e.getMessage());
-            }
-        }
-        catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " +
-            e.getStatus().getDescription());
-        }
-
-        System.out.println("OK\n" + tuple + "\n");
-    }
-
-    public List<String> intersection(List<List<String>> lists) throws IllegalArgumentException {
-        List<String> intersection = new ArrayList<String>(lists.get(0));
-        for (int i = 1; i < lists.size(); i++) {
-            intersection.retainAll(lists.get(i));
-        }
-        return intersection;
-    }
-
     public void getTupleSpacesState(int qualifier) {
         try {
             for (Integer i : delayer) {

@@ -109,7 +109,7 @@ public class CommandProcessor {
         String tuple = split[1];
 
         // take the tuple
-        clientService.takePhase1(tuple);
+        clientService.take(tuple);
     }
 
     private void getTupleSpacesState(String[] split) {

@@ -1,7 +1,7 @@
 package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 
 import io.grpc.stub.StreamObserver;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.*;
+import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaTotalOrder.*;
 
 
 public class ClientObserver<Response> implements StreamObserver<Response> {
@@ -20,12 +20,8 @@ public class ClientObserver<Response> implements StreamObserver<Response> {
             collector.incrementPutResponses();
         } else if (r instanceof getTupleSpacesStateResponse) {
             collector.setTuples(((getTupleSpacesStateResponse) r).getTupleList());
-        } else if (r instanceof TakePhase1Response) {
-            collector.addTakePhase1Tuples(((TakePhase1Response) r).getReservedTuplesList());
-        } else if (r instanceof TakePhase1ReleaseResponse) {
-            collector.incrementTakeReleaseResponses();
-        } else if (r instanceof TakePhase2Response) {
-            collector.incrementTakePhase2Responses();
+        } else if (r instanceof TakeResponse) {
+            // TODO: implement
         }
     }
 
