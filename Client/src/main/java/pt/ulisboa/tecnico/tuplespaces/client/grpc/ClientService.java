@@ -20,6 +20,7 @@ public class ClientService {
 
     /** Default host and port for the name server. */
     private static final String NAME_SERVER_TARGET = "localhost:5001";
+    /** Default host and port for the sequencer. */
     private static final String SEQUENCER_TARGET = "localhost:5002";
 
     /** Set flag to true to print debug messages.
@@ -185,13 +186,23 @@ public class ClientService {
             int seqNumber = seqResponse.getSeqNumber();
 
             debug("Sending take request with search pattern " + searchPattern + "...");
-            TakeResponse result = tupleSpacesStub.take(TakeRequest.newBuilder().setSearchPattern(searchPattern).build());
-            System.out.println("OK\n" + result.getResult() + "\n");
+            for (Integer i : delayer) {
+                TakeRequest request = TakeRequest.newBuilder().setSearchPattern(searchPattern).setSeqNumber(seqNumber).build();
+                tupleSpacesStubs.get(i).take(request, new ClientObserver<TakeResponse>(collector));
+            }
+            
+            try {
+                collector.waitForTakeResponses();
+            } catch (InterruptedException e) {
+                System.out.println("Caught exception: " + e.getMessage());
+            }
+            System.out.println("OK\n" + collector.getTakenSearchPattern() + "\n");  // TODO: check logic of take responses. We assume that all servers return the same tuple
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());
         }
     }
+
     public void getTupleSpacesState(int qualifier) {
         try {
             for (Integer i : delayer) {

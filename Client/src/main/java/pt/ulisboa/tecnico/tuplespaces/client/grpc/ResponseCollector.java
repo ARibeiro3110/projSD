@@ -10,27 +10,23 @@ public class ResponseCollector {
     private final Lock lock = new ReentrantLock();
     private final Condition putResponseCondition = lock.newCondition();
     private final Condition readResponseCondition = lock.newCondition();
-    private final Condition takePhase1Condition = lock.newCondition();
-    private final Condition takeReleaseCondition = lock.newCondition();
-    private final Condition takePhase2Condition = lock.newCondition();
+    private final Condition takeResponseCondition = lock.newCondition();
     private final Condition tupleSpacesStateCondition = lock.newCondition();
 
     private int numServers;
     private int putResponses;
     public String readTuple;
+    public String takenSearchPattern;
     private List<String> tupleSpacesState;
     private boolean expectingRead;
 
-    private List<List<String>> takePhase1Tuples;
-    private int takeReleaseResponses;
-    private int takePhase2Responses;
+    private int takeResponses;
 
     public ResponseCollector(int numServers) {
         putResponses = 0;
         readTuple = "";
-        takeReleaseResponses = 0;
-        takePhase1Tuples = new ArrayList<List<String>>();
-        takePhase2Responses = 0;
+        takenSearchPattern = "";
+        takeResponses = 0;
         tupleSpacesState = null;
         expectingRead = false;
 
@@ -127,78 +123,35 @@ public class ResponseCollector {
         }
     }
 
-    public List<List<String>> getTakePhase1Tuples() {
+    public String getTakenSearchPattern() {
         lock.lock();
         try {
-            List<List<String>> temp = takePhase1Tuples;
-            takePhase1Tuples = new ArrayList<List<String>>();
+            String temp = takenSearchPattern;
+            takenSearchPattern = "";
             return temp;
         } finally {
             lock.unlock();
         }
     }
 
-    public void addTakePhase1Tuples(List<String> tuples) {
+    public void incrementTakeResponses(String searchPattern) {
         lock.lock();
         try {
-            takePhase1Tuples.add(tuples);
-            takePhase1Condition.signal();
+            takeResponses++;
+            takenSearchPattern = searchPattern;
+            takeResponseCondition.signal();
         } finally {
             lock.unlock();
         }
     }
 
-    public void waitForTakePhase1Response() throws InterruptedException {
+    public void waitForTakeResponses() throws InterruptedException {
         lock.lock();
-
         try {
-            while (takePhase1Tuples.size() < numServers) {
-                takePhase1Condition.await();
+            while (takeResponses < numServers) {
+                takeResponseCondition.await();
             }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public void incrementTakeReleaseResponses() {
-        lock.lock();
-        try {
-            takeReleaseResponses++;
-            takeReleaseCondition.signal();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public void waitForTakeReleaseResponse() throws InterruptedException {
-        lock.lock();
-        try {
-            while (takeReleaseResponses < numServers) {
-                takeReleaseCondition.await();
-            }
-            takeReleaseResponses = 0;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public void incrementTakePhase2Responses() {
-        lock.lock();
-        try {
-            takePhase2Responses++;
-            takePhase2Condition.signal();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public void waitForTakePhase2Response() throws InterruptedException {
-        lock.lock();
-        try {
-            while (takePhase2Responses < numServers) {
-                takePhase2Condition.await();
-            }
-            takePhase2Responses = 0;
+            takeResponses = 0;
         } finally {
             lock.unlock();
         }

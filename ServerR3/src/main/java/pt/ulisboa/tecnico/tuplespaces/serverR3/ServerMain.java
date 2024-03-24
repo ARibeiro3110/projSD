@@ -1,12 +1,12 @@
-package pt.ulisboa.tecnico.tuplespaces.serverR2;
+package pt.ulisboa.tecnico.tuplespaces.serverR3;
 
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-import pt.ulisboa.tecnico.tuplespaces.serverR2.domain.ServerRegistryHandler;
-import pt.ulisboa.tecnico.tuplespaces.serverR2.grpc.ClientService;
-import pt.ulisboa.tecnico.tuplespaces.serverR2.grpc.ServerStateImpl;
+import pt.ulisboa.tecnico.tuplespaces.serverR3.domain.ServerRegistryHandler;
+import pt.ulisboa.tecnico.tuplespaces.serverR3.grpc.ClientService;
+import pt.ulisboa.tecnico.tuplespaces.serverR3.grpc.ServerStateImpl;
 
 import java.io.IOException;
 

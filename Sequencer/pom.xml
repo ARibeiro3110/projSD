@@ -21,7 +21,7 @@
 		<version.exec-maven-plugin>3.0.0</version.exec-maven-plugin>
 
 		<mainclass>pt.ulisboa.tecnico.tuplespaces.sequencer.SequencerServer</mainclass>
-		<server.port>8080</server.port>
+		<server.port>5002</server.port>
 	</properties>
 
 	<dependencies>

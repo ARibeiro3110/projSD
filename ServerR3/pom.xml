@@ -5,7 +5,7 @@
 	<!-- http://maven.apache.org/pom.html#Quick_Overview -->
 
 	<groupId>pt.tecnico.sdis.2024.A01</groupId>
-	<artifactId>ServerR2</artifactId>
+	<artifactId>ServerR3</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>${project.artifactId}</name>
@@ -20,7 +20,7 @@
 		<version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
 		<version.exec-maven-plugin>3.0.0</version.exec-maven-plugin>
 
-		<mainclass>pt.ulisboa.tecnico.tuplespaces.serverR2.ServerMain</mainclass>
+		<mainclass>pt.ulisboa.tecnico.tuplespaces.serverR3.ServerMain</mainclass>
 		<server.port>8000</server.port>
 		<server.qual>A</server.qual>
 		<server.name>TupleSpace</server.name>

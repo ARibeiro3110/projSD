@@ -1,9 +1,9 @@
-package pt.ulisboa.tecnico.tuplespaces.serverR2.grpc;
+package pt.ulisboa.tecnico.tuplespaces.serverR3.grpc;
 
 import io.grpc.stub.StreamObserver;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaXuLiskov.*;
-import pt.ulisboa.tecnico.tuplespaces.serverR2.domain.ServerState;
+import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaGrpc;
+import pt.ulisboa.tecnico.tuplespaces.replicaTotalOrder.contract.TupleSpacesReplicaTotalOrder.*;
+import pt.ulisboa.tecnico.tuplespaces.serverR3.domain.ServerState;
 import static io.grpc.Status.*;
 
 import java.util.List;
@@ -25,6 +25,7 @@ public class ServerStateImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaIm
     @Override
     public void put(PutRequest request, StreamObserver<PutResponse> responseObserver) {
         String tuple = request.getNewTuple();
+        int seqNumber = request.getSeqNumber();
 
         // validate tuple
         if (!serverState.isValidInput(tuple)) {
@@ -33,7 +34,7 @@ public class ServerStateImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaIm
                     .asRuntimeException());
             return;
         }
-        serverState.put(tuple);
+        serverState.put(tuple, seqNumber);
         debug("Tuple " + tuple + " added to the tuple space.");
 
         // send a single response through the stream.
@@ -66,10 +67,9 @@ public class ServerStateImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaIm
     }
 
     @Override
-    // takePhase1
-    public void takePhase1(TakePhase1Request request, StreamObserver<TakePhase1Response> responseObserver) {
+    public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
         String searchPattern = request.getSearchPattern();
-        int clientId = request.getClientId();
+        int seqNumber = request.getSeqNumber();
 
         // validate search pattern
         if (!serverState.isValidInput(searchPattern)) {
@@ -79,52 +79,12 @@ public class ServerStateImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaIm
             return;
         }
 
-        // acquire locks on available matching tuples
-        List<String> reservedTuples = serverState.takePhase1(searchPattern, clientId);
-        debug("Reserved tuples:\n"+ reservedTuples.toString());
+        // read tuple value
+        String result = serverState.take(searchPattern, seqNumber);
+        debug("Tuple " + result + " taken from the tuple space.");
 
         // send a single response through the stream
-        responseObserver.onNext(TakePhase1Response.newBuilder().addAllReservedTuples(reservedTuples).build());
-
-        // notify the client that the operation has been completed.
-        responseObserver.onCompleted();
-    }
-
-    @Override
-    // takePhase1Release
-    public void takePhase1Release(TakePhase1ReleaseRequest request, StreamObserver<TakePhase1ReleaseResponse> responseObserver) {
-        int clientId = request.getClientId();
-
-        // release locks on all reserved tuples
-        serverState.takePhase1Release(clientId);
-        debug("Locks released for client " + clientId + ".");
-
-        // send a single response through the stream
-        responseObserver.onNext(TakePhase1ReleaseResponse.newBuilder().build());
-
-        // notify the client that the operation has been completed.
-        responseObserver.onCompleted();
-    }
-
-    @Override
-    // takePhase2
-    public void takePhase2(TakePhase2Request request, StreamObserver<TakePhase2Response> responseObserver) {
-        String tuple = request.getTuple();
-        int clientId = request.getClientId();
-
-        // validate tuple
-        if (!serverState.isValidInput(tuple)) {
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription("Invalid tuple format.")
-                    .asRuntimeException());
-            return;
-        }
-
-        // remove tuple from the tuple space
-        serverState.takePhase2(tuple, clientId);
-
-        // send a single response through the stream
-        responseObserver.onNext(TakePhase2Response.newBuilder().build());
+        responseObserver.onNext(TakeResponse.newBuilder().setResult(result).build());
 
         // notify the client that the operation has been completed.
         responseObserver.onCompleted();

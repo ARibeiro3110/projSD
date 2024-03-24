@@ -1,6 +1,6 @@
-package pt.ulisboa.tecnico.tuplespaces.serverR2.domain;
+package pt.ulisboa.tecnico.tuplespaces.serverR3.domain;
 
-import pt.ulisboa.tecnico.tuplespaces.serverR2.grpc.ClientService;
+import pt.ulisboa.tecnico.tuplespaces.serverR3.grpc.ClientService;
 
 public class ServerRegistryHandler {
 
