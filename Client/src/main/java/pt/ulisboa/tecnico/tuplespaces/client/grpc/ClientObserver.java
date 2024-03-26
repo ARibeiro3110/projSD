@@ -17,11 +17,11 @@ public class ClientObserver<Response> implements StreamObserver<Response> {
         if (r instanceof ReadResponse) {
             collector.addTuple(((ReadResponse) r).getResult());
         } else if (r instanceof PutResponse) {
-            collector.incrementPutResponses();
+            collector.confirmPutResponse();
         } else if (r instanceof getTupleSpacesStateResponse) {
-            collector.setTuples(((getTupleSpacesStateResponse) r).getTupleList());
+            collector.setTupleSpacesState(((getTupleSpacesStateResponse) r).getTupleList());
         } else if (r instanceof TakeResponse) {
-            collector.incrementTakeResponses(((TakeResponse) r).getResult());
+            collector.setTakenTuple(((TakeResponse) r).getResult());
         }
     }
 

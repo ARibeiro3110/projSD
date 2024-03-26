@@ -196,7 +196,7 @@ public class ClientService {
             } catch (InterruptedException e) {
                 System.out.println("Caught exception: " + e.getMessage());
             }
-            System.out.println("OK\n" + collector.getTakenSearchPattern() + "\n");  // TODO: check logic of take responses. We assume that all servers return the same tuple
+            System.out.println("OK\n" + collector.getTakenTuple() + "\n");  // TODO: check logic of take responses. We assume that all servers return the same tuple
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());
