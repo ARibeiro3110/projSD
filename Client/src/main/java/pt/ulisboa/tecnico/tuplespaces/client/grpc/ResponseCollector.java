@@ -16,36 +16,38 @@ public class ResponseCollector {
     public String readTuple;
     public String takenTuple;
     private List<String> tupleSpacesState;
-    private boolean receivedReadResponse;
-    private boolean receivedPutResponse;
-    private boolean receivedTakeResponse;
+    private boolean awaitingPutResponse;
+    private boolean awaitingReadResponse;
+    private boolean awaitingTakeResponse;
+    private boolean awaitingStateResponse;
 
-    public ResponseCollector(int numServers) {
+    public ResponseCollector() {
         readTuple = "";
         takenTuple = "";
         tupleSpacesState = null;
-        receivedReadResponse = true;
-        receivedPutResponse = true;
-        receivedTakeResponse = true;
+        awaitingPutResponse = false;
+        awaitingReadResponse = false;
+        awaitingTakeResponse = false;
+        awaitingStateResponse = false;
     }
 
     public void confirmPutResponse() {
         lock.lock();
         try {
-            receivedPutResponse = true;
+            awaitingPutResponse = false;
             putResponseCondition.signal();
         } finally {
             lock.unlock();
         }
     }
 
-    public void waitForPutResponses() throws InterruptedException {
+    public void waitForPutResponse() throws InterruptedException {
         lock.lock();
-        try {
-            while (receivedPutResponse == false) {
+        try {      
+            awaitingPutResponse = true;
+            while(awaitingPutResponse) {   
                 putResponseCondition.await();
             }
-            receivedPutResponse = false;
         } finally {
             lock.unlock();
         }
@@ -65,9 +67,9 @@ public class ResponseCollector {
     public void addTuple(String tuple) {
         lock.lock();
         try {
-            if (!receivedReadResponse) {
+            if (awaitingReadResponse) {
                 readTuple = tuple;
-                receivedReadResponse = true;
+                awaitingReadResponse = false;
                 readResponseCondition.signal();
             }
         } finally {
@@ -78,8 +80,8 @@ public class ResponseCollector {
     public void waitForReadResponse() throws InterruptedException {
         lock.lock();
         try {
-            receivedReadResponse = false;
-            while (receivedReadResponse == false) {
+            awaitingReadResponse = true;
+            while (awaitingReadResponse) {
                 readResponseCondition.await();
             }
         } finally {
@@ -102,6 +104,7 @@ public class ResponseCollector {
         lock.lock();
         try {
             tupleSpacesState = new ArrayList<>(tuples);
+            awaitingStateResponse = false;
             tupleSpacesStateCondition.signal();
         } finally {
             lock.unlock();
@@ -111,7 +114,8 @@ public class ResponseCollector {
     public void waitForTupleSpacesStateResponse() throws InterruptedException {
         lock.lock();
         try {
-            while (tupleSpacesState == null) {
+            awaitingStateResponse = true;
+            while (awaitingStateResponse) {
                 tupleSpacesStateCondition.await();
             }
         } finally {
@@ -133,9 +137,9 @@ public class ResponseCollector {
     public void setTakenTuple(String tuple) {
         lock.lock();
         try {
-            if (!receivedTakeResponse) {
-                receivedTakeResponse = true;
+            if (awaitingTakeResponse) {
                 takenTuple = tuple;
+                awaitingTakeResponse = false;
                 takeResponseCondition.signal();
             }
         } finally {
@@ -143,13 +147,13 @@ public class ResponseCollector {
         }
     }
 
-    public void waitForTakeResponses() throws InterruptedException {
+    public void waitForTakeResponse() throws InterruptedException {
         lock.lock();
         try {
-            while (receivedTakeResponse == false) {
+            awaitingTakeResponse = true;
+            while (awaitingTakeResponse) {
                 takeResponseCondition.await();
             }
-            receivedTakeResponse = false;
         } finally {
             lock.unlock();
         }

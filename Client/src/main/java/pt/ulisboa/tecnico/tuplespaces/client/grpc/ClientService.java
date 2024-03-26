@@ -47,7 +47,7 @@ public class ClientService {
         this.numServers = numServers;
 
         delayer = new OrderedDelayer(numServers);
-        collector = new ResponseCollector(numServers);
+        collector = new ResponseCollector();
 
         channels = new ArrayList<ManagedChannel>();
         tupleSpacesStubs = new ArrayList<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub>();
@@ -143,7 +143,7 @@ public class ClientService {
             }
 
             try {
-                collector.waitForPutResponses();
+                collector.waitForPutResponse();
             } catch (InterruptedException e) {
                 System.out.println("Caught exception: " + e.getMessage());
             }
@@ -192,11 +192,11 @@ public class ClientService {
             }
             
             try {
-                collector.waitForTakeResponses();
+                collector.waitForTakeResponse();
             } catch (InterruptedException e) {
                 System.out.println("Caught exception: " + e.getMessage());
             }
-            System.out.println("OK\n" + collector.getTakenTuple() + "\n");  // TODO: check logic of take responses. We assume that all servers return the same tuple
+            System.out.println("OK\n" + collector.getTakenTuple() + "\n");
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " +
             e.getStatus().getDescription());
